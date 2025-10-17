@@ -1,0 +1,6 @@
+bricks:
+  new_feature_mvvm:
+    git:
+      url: "git@github.com:tecnologia-save/mason-bricks-flutter.git"
+      path: bricks/new_feature_mvvm
+      ref: v2.0.0
