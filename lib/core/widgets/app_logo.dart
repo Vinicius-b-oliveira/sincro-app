@@ -15,8 +15,8 @@ class AppLogo extends StatelessWidget {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     final logoAsset = isDarkMode
-        ? 'assets/images/logo_dark.png'
-        : 'assets/images/logo_light.png';
+        ? 'assets/images/logo_light.png'
+        : 'assets/images/logo_dark.png';
 
     return Image.asset(
       logoAsset,
