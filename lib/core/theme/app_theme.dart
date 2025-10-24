@@ -46,7 +46,9 @@ class AppTheme {
         bodyColor: colorScheme.onSurface,
         displayColor: colorScheme.onSurface,
       ),
-      scaffoldBackgroundColor: colorScheme.surface,
+      scaffoldBackgroundColor: colorScheme.brightness == Brightness.light
+          ? const Color(0xFFF8F9FA)
+          : const Color(0xFF1C2128),
       appBarTheme: AppBarTheme(
         backgroundColor: colorScheme.primary,
         foregroundColor: colorScheme.onPrimary,

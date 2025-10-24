@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:sincro/core/widgets/app_drawer.dart';
-import 'package:sincro/core/widgets/app_logo.dart';
 
 class AppShell extends ConsumerWidget {
   final Widget child;
@@ -16,9 +15,9 @@ class AppShell extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        leading: const Padding(
-          padding: EdgeInsets.all(12.0),
-          child: AppLogo(),
+        leading: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Image.asset('assets/images/logo_dark.png'),
         ),
         title: const Text(''),
         actions: [
