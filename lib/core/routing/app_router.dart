@@ -4,6 +4,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sincro/core/routing/app_routes.dart';
 import 'package:sincro/core/widgets/app_shell.dart';
 import 'package:sincro/features/auth/presentation/view/login_view.dart';
+import 'package:sincro/features/auth/presentation/view/signup_view.dart';
 
 part 'app_router.g.dart';
 
@@ -26,7 +27,7 @@ GoRouter goRouter(Ref ref) {
       GoRoute(
         path: AppRoutes.signup,
         name: AppRoutes.signup,
-        builder: (context, state) => const Placeholder(),
+        builder: (context, state) => const SignUpView(),
       ),
 
       GoRoute(

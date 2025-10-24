@@ -17,7 +17,9 @@ class AppShell extends ConsumerWidget {
         automaticallyImplyLeading: false,
         leading: Padding(
           padding: const EdgeInsets.all(12.0),
-          child: Image.asset('assets/images/logo_dark.png'),
+          child: Image.asset(
+            'assets/images/logo_dark.png',
+          ),
         ),
         title: const Text(''),
         actions: [
