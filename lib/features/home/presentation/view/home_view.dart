@@ -3,14 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:sincro/core/routing/app_routes.dart'; // Substitua 'sincro'
+import 'package:sincro/core/routing/app_routes.dart';
+import 'package:sincro/core/theme/app_colors.dart';
 
 class HomeView extends HookConsumerWidget {
   const HomeView({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Hook para controlar a visibilidade do saldo
     final isBalanceVisible = useState(true);
 
     final theme = Theme.of(context);
@@ -24,7 +24,6 @@ class HomeView extends HookConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // --- Seção Saldo ---
               _buildBalanceSection(
                 context,
                 textTheme,
@@ -33,11 +32,9 @@ class HomeView extends HookConsumerWidget {
               ),
               const SizedBox(height: 24),
 
-              // --- Seção Gráfico ---
               _buildChartSection(context, colorScheme),
               const SizedBox(height: 24),
 
-              // --- Botão Adicionar Gasto ---
               ElevatedButton(
                 onPressed: () => context.push(AppRoutes.addTransaction),
                 style: ElevatedButton.styleFrom(
@@ -49,12 +46,12 @@ class HomeView extends HookConsumerWidget {
                   'Adicionar novo gasto',
                   style: textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
+                    color: AppColors.white,
                   ),
                 ),
               ),
               const SizedBox(height: 24),
 
-              // --- Seção Histórico Recente ---
               _buildRecentHistory(context, colorScheme),
             ],
           ),
@@ -63,7 +60,6 @@ class HomeView extends HookConsumerWidget {
     );
   }
 
-  // Seção Saldo
   Widget _buildBalanceSection(
     BuildContext context,
     TextTheme textTheme,
@@ -94,7 +90,6 @@ class HomeView extends HookConsumerWidget {
         ),
         TextButton(
           onPressed: () => isBalanceVisible.value = !isBalanceVisible.value,
-          child: Text(isBalanceVisible.value ? 'Ocultar' : 'Mostrar'),
           style: TextButton.styleFrom(
             backgroundColor: colorScheme.primary,
             foregroundColor: colorScheme.onPrimary,
@@ -102,27 +97,25 @@ class HomeView extends HookConsumerWidget {
               borderRadius: BorderRadius.circular(8),
             ),
           ),
+          child: Text(isBalanceVisible.value ? 'Ocultar' : 'Mostrar'),
         ),
       ],
     );
   }
 
-  // Seção do Gráfico de Barras
   Widget _buildChartSection(BuildContext context, ColorScheme colorScheme) {
-    // Dados mocados para o gráfico e a legenda
     final chartData = [
       (label: 'contas', value: 500.0, color: colorScheme.secondary),
       (label: 'comida', value: 800.0, color: colorScheme.primary),
       (label: 'lazer', value: 300.0, color: colorScheme.secondary),
       (label: 'transporte', value: 600.0, color: colorScheme.primary),
       (label: 'outros', value: 450.0, color: colorScheme.secondary),
-      (label: 'invest', value: 900.0, color: colorScheme.primary),
+      (label: 'investimento', value: 900.0, color: colorScheme.primary),
     ];
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // O Gráfico
         Expanded(
           flex: 2,
           child: AspectRatio(
@@ -130,18 +123,57 @@ class HomeView extends HookConsumerWidget {
             child: BarChart(
               BarChartData(
                 alignment: BarChartAlignment.spaceAround,
-                titlesData: const FlTitlesData(
-                  leftTitles: AxisTitles(
+                barTouchData: BarTouchData(
+                  touchTooltipData: BarTouchTooltipData(
+                    getTooltipColor: (group) => colorScheme.surface,
+                    getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                      return BarTooltipItem(
+                        '${chartData[groupIndex].label}\nR\$ ${rod.toY.toStringAsFixed(2)}',
+                        TextStyle(
+                          color: colorScheme.onSurface,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      );
+                    },
+                    tooltipBorder: BorderSide(
+                      color: colorScheme.outline.withValues(alpha: 0.2),
+                      width: 1,
+                    ),
+                    tooltipPadding: const EdgeInsets.all(8),
+                  ),
+                ),
+                titlesData: FlTitlesData(
+                  leftTitles: const AxisTitles(
                     sideTitles: SideTitles(showTitles: false),
                   ),
-                  topTitles: AxisTitles(
+                  topTitles: const AxisTitles(
                     sideTitles: SideTitles(showTitles: false),
                   ),
-                  rightTitles: AxisTitles(
+                  rightTitles: const AxisTitles(
                     sideTitles: SideTitles(showTitles: false),
                   ),
                   bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 30,
+                      getTitlesWidget: (double value, TitleMeta meta) {
+                        if (value.toInt() >= 0 &&
+                            value.toInt() < chartData.length) {
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 4.0),
+                            child: Text(
+                              '${value.toInt() + 1}',
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                            ),
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      },
+                    ),
                   ),
                 ),
                 borderData: FlBorderData(show: false),
@@ -165,7 +197,6 @@ class HomeView extends HookConsumerWidget {
           ),
         ),
         const SizedBox(width: 16),
-        // A Legenda
         Expanded(
           flex: 3,
           child: Column(
@@ -197,9 +228,7 @@ class HomeView extends HookConsumerWidget {
     );
   }
 
-  // Seção de Histórico Recente
   Widget _buildRecentHistory(BuildContext context, ColorScheme colorScheme) {
-    // Dados mocados para a lista
     final recentTransactions = [
       (date: '24 out, 20:15', place: 'Uber', amount: '24,50'),
       (date: '24 out, 12:30', place: 'Restaurante', amount: '45,80'),
@@ -213,10 +242,9 @@ class HomeView extends HookConsumerWidget {
         recentTransactions.length,
         (index) {
           final item = recentTransactions[index];
-          // Cor alternada
           final color = index.isEven
-              ? colorScheme.secondary.withOpacity(0.7)
-              : colorScheme.secondary.withOpacity(0.4);
+              ? colorScheme.secondary.withValues(alpha: 0.7)
+              : colorScheme.secondary.withValues(alpha: 0.4);
 
           return _TransactionListItem(
             date: item.date,
@@ -231,7 +259,6 @@ class HomeView extends HookConsumerWidget {
   }
 }
 
-// Widget auxiliar para o item da lista
 class _TransactionListItem extends StatelessWidget {
   final String date;
   final String place;
@@ -273,7 +300,7 @@ class _TransactionListItem extends StatelessWidget {
               Text(
                 date,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: textColor.withOpacity(0.8),
+                  color: textColor.withValues(alpha: 0.8),
                 ),
               ),
             ],
