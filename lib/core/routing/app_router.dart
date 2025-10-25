@@ -7,6 +7,7 @@ import 'package:sincro/features/auth/presentation/view/login_view.dart';
 import 'package:sincro/features/auth/presentation/view/signup_view.dart';
 import 'package:sincro/features/home/presentation/view/home_view.dart';
 import 'package:sincro/features/profile/presentation/profile_view.dart';
+import 'package:sincro/features/transactions/presentation/view/history_view.dart';
 
 part 'app_router.g.dart';
 
@@ -51,7 +52,7 @@ GoRouter goRouter(Ref ref) {
           GoRoute(
             path: AppRoutes.history,
             name: AppRoutes.history,
-            builder: (context, state) => const Placeholder(),
+            builder: (context, state) => const HistoryView(),
           ),
           GoRoute(
             path: AppRoutes.groups,
