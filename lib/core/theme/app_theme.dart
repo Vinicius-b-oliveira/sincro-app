@@ -6,30 +6,38 @@ class AppTheme {
   static const Color _seedColor = AppColors.primary;
 
   static ThemeData get lightTheme {
-    final colorScheme = ColorScheme.fromSeed(
-      seedColor: _seedColor,
-      brightness: Brightness.light,
-      primary: AppColors.primary,
-      secondary: AppColors.secondary,
-      surface: AppColors.white,
-      onPrimary: AppColors.white,
-      onSecondary: AppColors.white,
-    );
+    final colorScheme =
+        ColorScheme.fromSeed(
+          seedColor: _seedColor,
+          brightness: Brightness.light,
+        ).copyWith(
+          primary: AppColors.primary,
+          secondary: AppColors.secondary,
+          surface: AppColors.white,
+          onPrimary: AppColors.white,
+          onSecondary: AppColors.white,
+          error: const Color(0xFFD32F2F), // Cor de erro consistente
+          onError: AppColors.white,
+        );
 
     final textTheme = GoogleFonts.nunitoTextTheme(ThemeData.light().textTheme);
     return _buildThemeData(colorScheme, textTheme);
   }
 
   static ThemeData get darkTheme {
-    final colorScheme = ColorScheme.fromSeed(
-      seedColor: _seedColor,
-      brightness: Brightness.dark,
-      primary: AppColors.primary,
-      secondary: AppColors.secondary,
-      surface: const Color(0xFF222831),
-      onPrimary: AppColors.white,
-      onSecondary: AppColors.white,
-    );
+    final colorScheme =
+        ColorScheme.fromSeed(
+          seedColor: _seedColor,
+          brightness: Brightness.dark,
+        ).copyWith(
+          primary: AppColors.primary,
+          secondary: AppColors.secondary,
+          surface: const Color(0xFF222831),
+          onPrimary: AppColors.white,
+          onSecondary: AppColors.white,
+          error: const Color(0xFFD32F2F), // Mesma cor de erro do tema claro
+          onError: AppColors.white,
+        );
 
     final textTheme = GoogleFonts.nunitoTextTheme(ThemeData.dark().textTheme);
     return _buildThemeData(colorScheme, textTheme);

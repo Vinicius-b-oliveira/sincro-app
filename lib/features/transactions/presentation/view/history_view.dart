@@ -99,6 +99,7 @@ class HistoryView extends HookConsumerWidget {
                       'Filtros',
                       style: textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.bold,
+                        fontSize: 20,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -191,7 +192,7 @@ class HistoryView extends HookConsumerWidget {
           date: 'data e lugar',
           amount: 'R\$ ...',
           color: color,
-          textColor: colorScheme.onSecondaryContainer,
+          textColor: colorScheme.onSecondary,
         );
       },
     );

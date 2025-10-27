@@ -4,7 +4,6 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:sincro/core/routing/app_routes.dart';
-import 'package:sincro/core/theme/app_colors.dart';
 
 class HomeView extends HookConsumerWidget {
   const HomeView({super.key});
@@ -46,7 +45,7 @@ class HomeView extends HookConsumerWidget {
                   'Adicionar novo gasto',
                   style: textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: AppColors.white,
+                    color: colorScheme.onPrimary,
                   ),
                 ),
               ),
@@ -251,7 +250,7 @@ class HomeView extends HookConsumerWidget {
             place: item.place,
             amount: item.amount,
             color: color,
-            textColor: colorScheme.onSecondaryContainer,
+            textColor: colorScheme.onSecondary,
           );
         },
       ),

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:sincro/core/routing/app_routes.dart';
 import 'package:sincro/core/theme/theme_notifier.dart';
 
 class ProfileView extends ConsumerWidget {
@@ -28,6 +30,9 @@ class ProfileView extends ConsumerWidget {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: colorScheme.secondary,
                   foregroundColor: colorScheme.onSecondary,
+                  textStyle: TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
                 child: Text(
@@ -36,6 +41,7 @@ class ProfileView extends ConsumerWidget {
                       : 'Mudar para Tema Escuro',
                   style: textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
+                    color: colorScheme.onSecondary,
                   ),
                 ),
               ),
@@ -54,6 +60,7 @@ class ProfileView extends ConsumerWidget {
                   'Selecionar grupo favorito',
                   style: textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
+                    color: colorScheme.onSecondary,
                   ),
                 ),
               ),
@@ -118,9 +125,7 @@ class ProfileView extends ConsumerWidget {
               const SizedBox(height: 48),
 
               ElevatedButton(
-                onPressed: () {
-                  // TODO: Lógica de logout (chamar o SessionNotifier)
-                },
+                onPressed: () => context.go(AppRoutes.login),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: colorScheme.error,
                   foregroundColor: colorScheme.onError,
@@ -130,6 +135,7 @@ class ProfileView extends ConsumerWidget {
                   'Sair da conta',
                   style: textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
+                    color: colorScheme.onError,
                   ),
                 ),
               ),

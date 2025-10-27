@@ -21,7 +21,7 @@ class SignUpView extends HookConsumerWidget {
     final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
-      backgroundColor: AppColors.primary,
+      backgroundColor: AppColors.secondary,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
@@ -119,7 +119,7 @@ class SignUpView extends HookConsumerWidget {
 
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.secondary,
+                    backgroundColor: AppColors.primary,
                     foregroundColor: AppColors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
