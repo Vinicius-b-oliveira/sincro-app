@@ -7,6 +7,8 @@ class AppRoutes {
   static const String home = '/';
   static const String history = '/history';
   static const String groups = '/groups';
+  static const String createGroup = '/groups/create';
+  static const String groupInvites = '/groups/invites';
   static const String groupDetails = '/groups/:id';
   static const String groupMembers = '/groups/:id/members';
   static const String groupEdit = '/groups/:id/edit';

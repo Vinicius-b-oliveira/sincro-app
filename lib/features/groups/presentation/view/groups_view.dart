@@ -21,9 +21,7 @@ class GroupsView extends HookConsumerWidget {
             const SizedBox(height: 16),
 
             ElevatedButton(
-              onPressed: () {
-                // TODO: Lógica para criar novo grupo
-              },
+              onPressed: () => context.push(AppRoutes.createGroup),
               style: ElevatedButton.styleFrom(
                 backgroundColor: colorScheme.primary,
                 foregroundColor: colorScheme.onPrimary,
@@ -40,9 +38,7 @@ class GroupsView extends HookConsumerWidget {
             const SizedBox(height: 16),
 
             ElevatedButton(
-              onPressed: () {
-                // TODO: Lógica para entrar em um grupo
-              },
+              onPressed: () => context.push(AppRoutes.groupInvites),
               style: ElevatedButton.styleFrom(
                 backgroundColor: colorScheme.primary,
                 foregroundColor: colorScheme.onPrimary,

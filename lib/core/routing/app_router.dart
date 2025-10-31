@@ -5,8 +5,10 @@ import 'package:sincro/core/routing/app_routes.dart';
 import 'package:sincro/core/widgets/app_shell.dart';
 import 'package:sincro/features/auth/presentation/view/login_view.dart';
 import 'package:sincro/features/auth/presentation/view/signup_view.dart';
+import 'package:sincro/features/groups/presentation/view/create_group_view.dart';
 import 'package:sincro/features/groups/presentation/view/edit_group_view.dart';
 import 'package:sincro/features/groups/presentation/view/group_detail_view.dart';
+import 'package:sincro/features/groups/presentation/view/group_invites_view.dart';
 import 'package:sincro/features/groups/presentation/view/group_settings_view.dart';
 import 'package:sincro/features/groups/presentation/view/groups_view.dart';
 import 'package:sincro/features/groups/presentation/view/view_members_view.dart';
@@ -48,6 +50,18 @@ GoRouter goRouter(Ref ref) {
             fullscreenDialog: true,
           );
         },
+      ),
+
+      GoRoute(
+        path: AppRoutes.createGroup,
+        name: AppRoutes.createGroup,
+        builder: (context, state) => const CreateGroupView(),
+      ),
+
+      GoRoute(
+        path: AppRoutes.groupInvites,
+        name: AppRoutes.groupInvites,
+        builder: (context, state) => const GroupInvitesView(),
       ),
 
       GoRoute(
