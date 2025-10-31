@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:sincro/core/routing/app_routes.dart'; // Substitua 'sincro' pelo nome do seu projeto
+import 'package:sincro/core/routing/app_routes.dart';
 
 class AppDrawer extends ConsumerWidget {
   const AppDrawer({super.key});

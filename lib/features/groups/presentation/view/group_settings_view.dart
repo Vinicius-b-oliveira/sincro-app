@@ -236,7 +236,6 @@ class GroupSettingsView extends HookConsumerWidget {
               ),
               const SizedBox(height: 24),
 
-              // Seção: Ações Avançadas
               _SectionHeader(
                 title: 'Ações avançadas',
                 icon: Icons.build_outlined,

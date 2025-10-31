@@ -70,7 +70,6 @@ class HistoryView extends HookConsumerWidget {
     );
   }
 
-  // Painel de Filtros
   Widget _buildFilterPanel(
     BuildContext context, {
     required ValueNotifier<bool> filterMonth,

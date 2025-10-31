@@ -408,7 +408,6 @@ class _InviteCard extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // Botões de ação
             Row(
               children: [
                 Expanded(

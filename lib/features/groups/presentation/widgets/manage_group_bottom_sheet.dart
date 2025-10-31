@@ -42,7 +42,6 @@ class ManageGroupBottomSheet extends HookWidget {
           ),
           const SizedBox(height: 20),
 
-          // Título
           Text(
             'Gerenciar grupo',
             style: textTheme.headlineSmall?.copyWith(

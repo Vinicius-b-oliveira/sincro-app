@@ -28,7 +28,7 @@ class LoginView extends HookConsumerWidget {
                     fillColor: AppColors.white,
                     hintStyle: const TextStyle(
                       color: AppColors.grey,
-                    ), // Cor do hint
+                    ),
                   ),
             ),
             child: Column(

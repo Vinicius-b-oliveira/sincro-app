@@ -89,7 +89,6 @@ class AddTransactionView extends HookConsumerWidget {
             ),
             const SizedBox(height: 24),
 
-            // Campo de Título
             TextFormField(
               controller: titleController,
               style: textTheme.bodyLarge,
@@ -206,7 +205,7 @@ class AddTransactionView extends HookConsumerWidget {
                   lastDate: DateTime.now().add(const Duration(days: 365)),
                 );
                 if (pickedDate != null) {
-                  // TODO: Formatar a data (ex: com 'intl' package)
+                  // TODO: Formatar a data
                   dateController.text = pickedDate.toString().split(' ')[0];
                 }
               },
@@ -303,7 +302,6 @@ class AddTransactionView extends HookConsumerWidget {
             ),
             const SizedBox(height: 32),
 
-            // Botão Salvar
             ElevatedButton(
               onPressed: () {
                 // TODO: Chamar ViewModel para salvar

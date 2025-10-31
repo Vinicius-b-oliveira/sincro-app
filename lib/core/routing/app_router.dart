@@ -13,7 +13,7 @@ import 'package:sincro/features/groups/presentation/view/group_settings_view.dar
 import 'package:sincro/features/groups/presentation/view/groups_view.dart';
 import 'package:sincro/features/groups/presentation/view/view_members_view.dart';
 import 'package:sincro/features/home/presentation/view/home_view.dart';
-import 'package:sincro/features/profile/presentation/profile_view.dart';
+import 'package:sincro/features/profile/presentation/view/profile_view.dart';
 import 'package:sincro/features/transactions/presentation/view/add_transaction_view.dart';
 import 'package:sincro/features/transactions/presentation/view/history_view.dart';
 

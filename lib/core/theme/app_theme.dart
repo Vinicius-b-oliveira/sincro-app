@@ -16,7 +16,7 @@ class AppTheme {
           surface: AppColors.white,
           onPrimary: AppColors.white,
           onSecondary: AppColors.white,
-          error: const Color(0xFFD32F2F), // Cor de erro consistente
+          error: const Color(0xFFD32F2F),
           onError: AppColors.white,
         );
 
@@ -35,7 +35,7 @@ class AppTheme {
           surface: const Color(0xFF222831),
           onPrimary: AppColors.white,
           onSecondary: AppColors.white,
-          error: const Color(0xFFD32F2F), // Mesma cor de erro do tema claro
+          error: const Color(0xFFD32F2F),
           onError: AppColors.white,
         );
 

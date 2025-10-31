@@ -3,6 +3,9 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:sincro/core/routing/app_routes.dart';
 import 'package:sincro/core/theme/theme_notifier.dart';
+import 'package:sincro/features/profile/presentation/widgets/edit_name_bottom_sheet.dart';
+import 'package:sincro/features/profile/presentation/widgets/edit_password_bottom_sheet.dart';
+import 'package:sincro/features/profile/presentation/widgets/favorite_group_bottom_sheet.dart';
 
 class ProfileView extends ConsumerWidget {
   const ProfileView({super.key});
@@ -49,7 +52,12 @@ class ProfileView extends ConsumerWidget {
 
               ElevatedButton(
                 onPressed: () {
-                  // TODO: Lógica para selecionar grupo
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (context) => const FavoriteGroupBottomSheet(),
+                  );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: colorScheme.secondary,
@@ -96,7 +104,14 @@ class ProfileView extends ConsumerWidget {
                 children: [
                   TextButton(
                     onPressed: () {
-                      // TODO: Navegar para alterar nome
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (context) => const EditNameBottomSheet(
+                          currentName: 'NOME',
+                        ),
+                      );
                     },
                     child: Text(
                       'alterar nome',
@@ -109,7 +124,12 @@ class ProfileView extends ConsumerWidget {
                   ),
                   TextButton(
                     onPressed: () {
-                      // TODO: Navegar para alterar senha
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (context) => const EditPasswordBottomSheet(),
+                      );
                     },
                     child: Text(
                       'alterar senha',
