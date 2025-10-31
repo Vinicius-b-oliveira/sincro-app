@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:sincro/core/routing/app_routes.dart';
 
 class GroupsView extends HookConsumerWidget {
   const GroupsView({super.key});
@@ -75,10 +77,10 @@ class GroupsView extends HookConsumerWidget {
 
   Widget _buildGroupList(BuildContext context, ColorScheme colorScheme) {
     final groups = [
-      'Ap. 101',
-      'Viagem FDS',
-      'Presente da Mãe',
-      'Contas da Casa',
+      (id: '1', name: 'Ap. 101'),
+      (id: '2', name: 'Viagem FDS'),
+      (id: '3', name: 'Presente da Mãe'),
+      (id: '4', name: 'Contas da Casa'),
     ];
 
     return ListView.builder(
@@ -90,19 +92,29 @@ class GroupsView extends HookConsumerWidget {
             ? colorScheme.secondary.withValues(alpha: .7)
             : colorScheme.secondary.withValues(alpha: .4);
 
-        return Container(
-          margin: const EdgeInsets.only(bottom: 8.0),
-          padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 12.0),
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(8.0),
-          ),
-          child: Text(
-            groups[index],
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: colorScheme.onSecondary,
+        return GestureDetector(
+          onTap: () {
+            context.push(
+              AppRoutes.groupDetails.replaceAll(':id', groups[index].id),
+            );
+          },
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 8.0),
+            padding: const EdgeInsets.symmetric(
+              vertical: 16.0,
+              horizontal: 12.0,
+            ),
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(8.0),
+            ),
+            child: Text(
+              groups[index].name,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onSecondary,
+              ),
             ),
           ),
         );

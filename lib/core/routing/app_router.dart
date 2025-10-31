@@ -5,7 +5,11 @@ import 'package:sincro/core/routing/app_routes.dart';
 import 'package:sincro/core/widgets/app_shell.dart';
 import 'package:sincro/features/auth/presentation/view/login_view.dart';
 import 'package:sincro/features/auth/presentation/view/signup_view.dart';
+import 'package:sincro/features/groups/presentation/view/edit_group_view.dart';
+import 'package:sincro/features/groups/presentation/view/group_detail_view.dart';
+import 'package:sincro/features/groups/presentation/view/group_settings_view.dart';
 import 'package:sincro/features/groups/presentation/view/groups_view.dart';
+import 'package:sincro/features/groups/presentation/view/view_members_view.dart';
 import 'package:sincro/features/home/presentation/view/home_view.dart';
 import 'package:sincro/features/profile/presentation/profile_view.dart';
 import 'package:sincro/features/transactions/presentation/view/add_transaction_view.dart';
@@ -43,6 +47,42 @@ GoRouter goRouter(Ref ref) {
             child: AddTransactionView(),
             fullscreenDialog: true,
           );
+        },
+      ),
+
+      GoRoute(
+        path: AppRoutes.groupDetails,
+        name: AppRoutes.groupDetails,
+        builder: (context, state) {
+          final groupId = state.pathParameters['id'] ?? 'ID_PADRAO';
+          return GroupDetailView(groupId: groupId);
+        },
+      ),
+
+      GoRoute(
+        path: AppRoutes.groupMembers,
+        name: AppRoutes.groupMembers,
+        builder: (context, state) {
+          final groupId = state.pathParameters['id'] ?? 'ID_PADRAO';
+          return ViewMembersView(groupId: groupId);
+        },
+      ),
+
+      GoRoute(
+        path: AppRoutes.groupEdit,
+        name: AppRoutes.groupEdit,
+        builder: (context, state) {
+          final groupId = state.pathParameters['id'] ?? 'ID_PADRAO';
+          return EditGroupView(groupId: groupId);
+        },
+      ),
+
+      GoRoute(
+        path: AppRoutes.groupSettings,
+        name: AppRoutes.groupSettings,
+        builder: (context, state) {
+          final groupId = state.pathParameters['id'] ?? 'ID_PADRAO';
+          return GroupSettingsView(groupId: groupId);
         },
       ),
 
