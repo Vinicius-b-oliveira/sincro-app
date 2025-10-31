@@ -14,8 +14,10 @@ import 'package:sincro/features/groups/presentation/view/groups_view.dart';
 import 'package:sincro/features/groups/presentation/view/view_members_view.dart';
 import 'package:sincro/features/home/presentation/view/home_view.dart';
 import 'package:sincro/features/profile/presentation/view/profile_view.dart';
+import 'package:sincro/features/transactions/models/transaction.dart';
 import 'package:sincro/features/transactions/presentation/view/add_transaction_view.dart';
 import 'package:sincro/features/transactions/presentation/view/history_view.dart';
+import 'package:sincro/features/transactions/presentation/view/transaction_detail_view.dart';
 
 part 'app_router.g.dart';
 
@@ -97,6 +99,83 @@ GoRouter goRouter(Ref ref) {
         builder: (context, state) {
           final groupId = state.pathParameters['id'] ?? 'ID_PADRAO';
           return GroupSettingsView(groupId: groupId);
+        },
+      ),
+
+      GoRoute(
+        path: AppRoutes.transactionDetail,
+        name: AppRoutes.transactionDetail,
+        builder: (context, state) {
+          final transactionId = state.pathParameters['id'] ?? '1';
+          final id = int.tryParse(transactionId) ?? 1;
+
+          final mockTransactions = {
+            1: Transaction(
+              id: 1,
+              title: 'Uber',
+              description: 'Corrida para casa',
+              amount: '24.50',
+              type: 'expense',
+              transactionDate: DateTime.now().subtract(
+                const Duration(hours: 4),
+              ),
+              createdAt: DateTime.now().subtract(const Duration(hours: 4)),
+              isOwnedByUser: true,
+            ),
+            2: Transaction(
+              id: 2,
+              title: 'Restaurante',
+              description: 'Almoço no centro',
+              amount: '45.80',
+              type: 'expense',
+              transactionDate: DateTime.now().subtract(
+                const Duration(hours: 12),
+              ),
+              createdAt: DateTime.now().subtract(const Duration(hours: 12)),
+              isOwnedByUser: false,
+            ),
+            3: Transaction(
+              id: 3,
+              title: 'Mercado',
+              description: 'Compras da semana',
+              amount: '312.90',
+              type: 'expense',
+              transactionDate: DateTime.now().subtract(
+                const Duration(days: 1, hours: 6),
+              ),
+              createdAt: DateTime.now().subtract(
+                const Duration(days: 1, hours: 6),
+              ),
+              isOwnedByUser: false,
+            ),
+            4: Transaction(
+              id: 4,
+              title: 'Padaria',
+              description: 'Pães e café',
+              amount: '18.00',
+              type: 'expense',
+              transactionDate: DateTime.now().subtract(
+                const Duration(days: 2, hours: 10),
+              ),
+              createdAt: DateTime.now().subtract(
+                const Duration(days: 2, hours: 10),
+              ),
+              isOwnedByUser: true,
+            ),
+            5: Transaction(
+              id: 5,
+              title: 'Freelance',
+              description: 'Projeto de desenvolvimento web',
+              amount: '1200.00',
+              type: 'income',
+              transactionDate: DateTime.now().subtract(const Duration(days: 3)),
+              createdAt: DateTime.now().subtract(const Duration(days: 3)),
+              isOwnedByUser: true,
+            ),
+          };
+
+          final transaction = mockTransactions[id] ?? mockTransactions[1]!;
+          return TransactionDetailView(transaction: transaction);
         },
       ),
 

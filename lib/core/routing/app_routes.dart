@@ -16,6 +16,7 @@ class AppRoutes {
   static const String profile = '/profile';
 
   static const String addTransaction = '/add-transaction';
+  static const String transactionDetail = '/transaction/:id';
 
   static const Set<String> publicRoutes = {
     splash,

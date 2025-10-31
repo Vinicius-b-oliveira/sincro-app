@@ -42,7 +42,7 @@ class HomeView extends HookConsumerWidget {
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
                 child: Text(
-                  'Adicionar novo gasto',
+                  'Adicionar nova transação',
                   style: textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: colorScheme.onPrimary,
@@ -229,11 +229,11 @@ class HomeView extends HookConsumerWidget {
 
   Widget _buildRecentHistory(BuildContext context, ColorScheme colorScheme) {
     final recentTransactions = [
-      (date: '24 out, 20:15', place: 'Uber', amount: '24,50'),
-      (date: '24 out, 12:30', place: 'Restaurante', amount: '45,80'),
-      (date: '23 out, 18:00', place: 'Mercado', amount: '312,90'),
-      (date: '22 out, 09:10', place: 'Padaria', amount: '18,00'),
-      (date: '21 out, 14:00', place: 'Cinema', amount: '60,00'),
+      (id: 1, date: '24 out, 20:15', place: 'Uber', amount: '24,50'),
+      (id: 2, date: '24 out, 12:30', place: 'Restaurante', amount: '45,80'),
+      (id: 3, date: '23 out, 18:00', place: 'Mercado', amount: '312,90'),
+      (id: 4, date: '22 out, 09:10', place: 'Padaria', amount: '18,00'),
+      (id: 5, date: '21 out, 14:00', place: 'Cinema', amount: '60,00'),
     ];
 
     return Column(
@@ -246,6 +246,7 @@ class HomeView extends HookConsumerWidget {
               : colorScheme.secondary.withValues(alpha: 0.4);
 
           return _TransactionListItem(
+            id: item.id,
             date: item.date,
             place: item.place,
             amount: item.amount,
@@ -259,6 +260,7 @@ class HomeView extends HookConsumerWidget {
 }
 
 class _TransactionListItem extends StatelessWidget {
+  final int id;
   final String date;
   final String place;
   final String amount;
@@ -266,6 +268,7 @@ class _TransactionListItem extends StatelessWidget {
   final Color textColor;
 
   const _TransactionListItem({
+    required this.id,
     required this.date,
     required this.place,
     required this.amount,
@@ -275,43 +278,59 @@ class _TransactionListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8.0),
-      padding: const EdgeInsets.all(12.0),
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(8.0),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                place,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: textColor,
+    return InkWell(
+      onTap: () {
+        context.push('/transaction/$id');
+      },
+      borderRadius: BorderRadius.circular(8.0),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8.0),
+        padding: const EdgeInsets.all(12.0),
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(8.0),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  place,
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: textColor,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                date,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: textColor.withValues(alpha: 0.8),
+                const SizedBox(height: 2),
+                Text(
+                  date,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: textColor.withValues(alpha: 0.8),
+                  ),
                 ),
-              ),
-            ],
-          ),
-          Text(
-            'R\$ $amount',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: textColor,
+              ],
             ),
-          ),
-        ],
+            Row(
+              children: [
+                Text(
+                  'R\$ $amount',
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: textColor,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  size: 16,
+                  color: textColor.withValues(alpha: 0.7),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
