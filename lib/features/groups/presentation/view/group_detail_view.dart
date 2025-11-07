@@ -59,20 +59,41 @@ class GroupDetailView extends HookConsumerWidget {
               _buildChartSection(context, colorScheme),
               const SizedBox(height: 24),
 
-              ElevatedButton(
-                onPressed: () => context.push(AppRoutes.addTransaction),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: colorScheme.primary,
-                  foregroundColor: colorScheme.onPrimary,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-                child: Text(
-                  'Adicionar nova transação',
-                  style: textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: colorScheme.onPrimary,
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => context.push(AppRoutes.addTransaction),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: colorScheme.primary,
+                        foregroundColor: colorScheme.onPrimary,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                      child: Text(
+                        'Adicionar transação',
+                        style: textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: colorScheme.onPrimary,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 12),
+                  ElevatedButton.icon(
+                    onPressed: () =>
+                        context.push('${AppRoutes.analytics}?groupId=$groupId'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: colorScheme.secondary,
+                      foregroundColor: colorScheme.onSecondary,
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 16,
+                        horizontal: 16,
+                      ),
+                    ),
+                    icon: const Icon(Icons.analytics, size: 20),
+                    label: const Text('Análises'),
+                  ),
+                ],
               ),
               const SizedBox(height: 24),
 
@@ -361,25 +382,57 @@ class GroupDetailView extends HookConsumerWidget {
 
   Widget _buildRecentHistory(BuildContext context, ColorScheme colorScheme) {
     final recentTransactions = [
-      (id: 1, date: '24 out, 20:15', place: 'Uber', amount: '24,50'),
-      (id: 2, date: '24 out, 12:30', place: 'Restaurante', amount: '45,80'),
-      (id: 3, date: '23 out, 18:00', place: 'Mercado', amount: '312,90'),
+      (
+        id: 1,
+        name: 'Uber para casa',
+        category: 'Transporte',
+        location: 'Uber',
+        date: '07 nov, 20:15',
+        amount: 'R\$ 24,50',
+        type: 'expense',
+        group: 'Pessoal',
+      ),
+      (
+        id: 2,
+        name: 'Almoço no Restaurante',
+        category: 'Alimentação',
+        location: 'Restaurante',
+        date: '07 nov, 12:30',
+        amount: 'R\$ 45,80',
+        type: 'expense',
+        group: 'Trabalho',
+      ),
+      (
+        id: 3,
+        name: 'Compras no Mercado',
+        category: 'Alimentação',
+        location: 'Mercado',
+        date: '06 nov, 18:00',
+        amount: 'R\$ 312,90',
+        type: 'expense',
+        group: 'Família',
+      ),
     ];
 
     return Column(
       children: List.generate(
         recentTransactions.length,
         (index) {
-          final item = recentTransactions[index];
+          final transaction = recentTransactions[index];
+          final isIncome = transaction.type == 'income';
           final color = index.isEven
               ? colorScheme.secondary.withValues(alpha: 0.7)
               : colorScheme.secondary.withValues(alpha: 0.4);
 
           return _TransactionListItem(
-            id: item.id,
-            date: item.date,
-            place: item.place,
-            amount: item.amount,
+            id: transaction.id,
+            name: transaction.name,
+            category: transaction.category,
+            location: transaction.location,
+            date: transaction.date,
+            amount: transaction.amount,
+            isIncome: isIncome,
+            group: transaction.group,
             color: color,
             textColor: colorScheme.onSecondary,
           );
@@ -391,17 +444,25 @@ class GroupDetailView extends HookConsumerWidget {
 
 class _TransactionListItem extends StatelessWidget {
   final int id;
+  final String name;
+  final String category;
+  final String location;
   final String date;
-  final String place;
   final String amount;
+  final bool isIncome;
+  final String group;
   final Color color;
   final Color textColor;
 
   const _TransactionListItem({
     required this.id,
+    required this.name,
+    required this.category,
+    required this.location,
     required this.date,
-    required this.place,
     required this.amount,
+    required this.isIncome,
+    required this.group,
     required this.color,
     required this.textColor,
   });
@@ -414,48 +475,129 @@ class _TransactionListItem extends StatelessWidget {
       },
       borderRadius: BorderRadius.circular(8.0),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 8.0),
-        padding: const EdgeInsets.all(12.0),
+        margin: const EdgeInsets.only(bottom: 12.0),
+        padding: const EdgeInsets.all(16.0),
         decoration: BoxDecoration(
           color: color,
           borderRadius: BorderRadius.circular(8.0),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.1),
+          ),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        child: Column(
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            Row(
               children: [
-                Text(
-                  place,
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: textColor.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    _getCategoryIcon(category),
+                    size: 20,
                     color: textColor,
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  date,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: textColor.withValues(alpha: 0.8),
+                const SizedBox(width: 12),
+
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name,
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: textColor,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        location,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: textColor.withValues(alpha: 0.8),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ),
+                ),
+
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      amount,
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: isIncome ? Colors.green[700] : Colors.red[700],
+                      ),
+                    ),
+                    Icon(
+                      isIncome ? Icons.arrow_downward : Icons.arrow_upward,
+                      size: 16,
+                      color: isIncome ? Colors.green[700] : Colors.red[700],
+                    ),
+                  ],
                 ),
               ],
             ),
+
+            const SizedBox(height: 8),
+
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'R\$ $amount',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: textColor,
-                  ),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: textColor.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        category,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: textColor,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: textColor.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        group,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: textColor,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                Icon(
-                  Icons.arrow_forward_ios,
-                  size: 16,
-                  color: textColor.withValues(alpha: 0.7),
+                Text(
+                  date,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: textColor.withValues(alpha: 0.7),
+                    fontSize: 10,
+                  ),
                 ),
               ],
             ),
@@ -463,5 +605,24 @@ class _TransactionListItem extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  IconData _getCategoryIcon(String category) {
+    switch (category.toLowerCase()) {
+      case 'alimentação':
+        return Icons.restaurant;
+      case 'transporte':
+        return Icons.directions_car;
+      case 'lazer':
+        return Icons.movie;
+      case 'contas':
+        return Icons.receipt_long;
+      case 'trabalho':
+        return Icons.work;
+      case 'transferência':
+        return Icons.compare_arrows;
+      default:
+        return Icons.shopping_cart;
+    }
   }
 }

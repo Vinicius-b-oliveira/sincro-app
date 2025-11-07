@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sincro/core/routing/app_routes.dart';
 import 'package:sincro/core/widgets/app_shell.dart';
+import 'package:sincro/features/analytics/presentation/view/analytics_view.dart';
 import 'package:sincro/features/auth/presentation/view/login_view.dart';
 import 'package:sincro/features/auth/presentation/view/signup_view.dart';
 import 'package:sincro/features/groups/presentation/view/create_group_view.dart';
@@ -176,6 +177,15 @@ GoRouter goRouter(Ref ref) {
 
           final transaction = mockTransactions[id] ?? mockTransactions[1]!;
           return TransactionDetailView(transaction: transaction);
+        },
+      ),
+
+      GoRoute(
+        path: AppRoutes.analytics,
+        name: AppRoutes.analytics,
+        builder: (context, state) {
+          final groupId = state.uri.queryParameters['groupId'];
+          return AnalyticsView(groupId: groupId);
         },
       ),
 
