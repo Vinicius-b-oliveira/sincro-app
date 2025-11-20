@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:sincro/app.dart';
 
-import 'core/storage/hive_service.dart';
+import 'core/config/api_config.dart';
+import 'core/constants/hive_box_names.dart'; // Importante
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await dotenv.load(fileName: '.env');
+  await ApiConfig.initialize();
 
-  await HiveService.init();
+  await Hive.initFlutter();
+
+  await Hive.openBox(HiveBoxNames.auth);
+  await Hive.openBox(HiveBoxNames.preferences);
 
   runApp(
     const ProviderScope(

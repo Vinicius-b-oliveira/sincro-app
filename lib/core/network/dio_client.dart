@@ -1,36 +1,12 @@
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
 
-import '../constants/api_constants.dart';
 import '../errors/app_failure.dart';
-import 'auth_interceptor.dart';
 
 class DioClient {
   final Dio _dio;
 
-  DioClient(AuthInterceptor authInterceptor)
-    : _dio = Dio(
-        BaseOptions(
-          baseUrl: ApiConstants.baseUrl,
-          connectTimeout: ApiConstants.connectTimeout,
-          receiveTimeout: ApiConstants.receiveTimeout,
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-          },
-        ),
-      ) {
-    _dio.interceptors.add(authInterceptor);
-
-    // TODO: Remover ou configurar via .env em produção
-    _dio.interceptors.add(
-      LogInterceptor(
-        requestBody: true,
-        responseBody: true,
-        logPrint: (obj) => print('DIO LOG: $obj'),
-      ),
-    );
-  }
+  DioClient(this._dio);
 
   TaskEither<AppFailure, Response> get(
     String path, {

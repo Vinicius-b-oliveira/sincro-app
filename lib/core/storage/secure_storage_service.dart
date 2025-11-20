@@ -1,17 +1,15 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:fpdart/fpdart.dart';
-
-import '../errors/app_failure.dart';
+import 'package:sincro/core/errors/app_failure.dart';
+import 'package:sincro/features/auth/data/models/token_model.dart';
 
 class SecureStorageService {
-  static const _storage = FlutterSecureStorage(
-    aOptions: AndroidOptions(
-      encryptedSharedPreferences: true,
-    ),
-    iOptions: IOSOptions(
-      accessibility: KeychainAccessibility.first_unlock,
-    ),
-  );
+  final FlutterSecureStorage _storage;
+
+  SecureStorageService(this._storage);
+
+  static const _accessTokenKey = 'access_token';
+  static const _refreshTokenKey = 'refresh_token';
 
   TaskEither<AppFailure, String?> read(String key) {
     return TaskEither.tryCatch(
@@ -43,5 +41,32 @@ class SecureStorageService {
       (error, stack) =>
           CacheFailure(message: 'Erro ao limpar dados seguros: $error'),
     );
+  }
+
+  TaskEither<AppFailure, TokenModel?> getTokens() {
+    return read(_accessTokenKey).flatMap((accessToken) {
+      if (accessToken == null) return TaskEither.right(null);
+
+      return read(_refreshTokenKey).map((refreshToken) {
+        if (refreshToken == null) return null;
+
+        return TokenModel(
+          accessToken: accessToken,
+          refreshToken: refreshToken,
+        );
+      });
+    });
+  }
+
+  TaskEither<AppFailure, void> saveTokens(TokenModel tokens) {
+    return write(
+      _accessTokenKey,
+      tokens.accessToken,
+    ).flatMap((_) => write(_refreshTokenKey, tokens.refreshToken));
+  }
+
+  /// Deleta os tokens sequencialmente
+  TaskEither<AppFailure, void> deleteTokens() {
+    return delete(_accessTokenKey).flatMap((_) => delete(_refreshTokenKey));
   }
 }

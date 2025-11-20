@@ -1,55 +1,80 @@
+import 'dart:convert';
+
+import 'package:flutter/material.dart' show ThemeMode;
 import 'package:fpdart/fpdart.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:sincro/core/constants/hive_box_names.dart';
+import 'package:sincro/core/models/user_model.dart';
 
 import '../errors/app_failure.dart';
 
 class HiveService {
-  static const String _cacheBox = 'sincro_cache';
+  static const _userKey = 'user_profile';
 
-  static Future<void> init() async {
-    await Hive.initFlutter();
-    await Hive.openBox(_cacheBox);
-  }
-
-  TaskEither<AppFailure, T?> get<T>(String key) {
+  TaskEither<AppFailure, void> saveUser(UserModel user) {
     return TaskEither.tryCatch(
       () async {
-        final box = Hive.box(_cacheBox);
-        return box.get(key) as T?;
+        final box = Hive.box(HiveBoxNames.auth);
+        await box.put(_userKey, jsonEncode(user.toJson()));
       },
-      (error, stack) => CacheFailure(message: 'Erro ao ler cache: $error'),
+      (error, stack) => CacheFailure(message: 'Erro ao salvar usuário: $error'),
     );
   }
 
-  TaskEither<AppFailure, void> put<T>(String key, T value) {
+  TaskEither<AppFailure, UserModel?> getUser() {
     return TaskEither.tryCatch(
       () async {
-        final box = Hive.box(_cacheBox);
-        await box.put(key, value);
+        final box = Hive.box(HiveBoxNames.auth);
+        final userString = box.get(_userKey) as String?;
+
+        if (userString != null) {
+          final json = jsonDecode(userString) as Map<String, dynamic>;
+          return UserModel.fromJson(json);
+        }
+        return null;
+      },
+      (error, stack) => CacheFailure(message: 'Erro ao ler usuário: $error'),
+    );
+  }
+
+  TaskEither<AppFailure, void> deleteUser() {
+    return TaskEither.tryCatch(
+      () async {
+        final box = Hive.box(HiveBoxNames.auth);
+        await box.delete(_userKey);
       },
       (error, stack) =>
-          CacheFailure(message: 'Erro ao salvar no cache: $error'),
+          CacheFailure(message: 'Erro ao deletar usuário: $error'),
     );
   }
 
-  TaskEither<AppFailure, void> delete(String key) {
+  static const _themeModeKey = 'theme_mode';
+
+  TaskEither<AppFailure, void> saveThemeMode(ThemeMode mode) {
     return TaskEither.tryCatch(
       () async {
-        final box = Hive.box(_cacheBox);
-        await box.delete(key);
+        final box = Hive.box(HiveBoxNames.preferences);
+        await box.put(_themeModeKey, mode.name);
       },
-      (error, stack) =>
-          CacheFailure(message: 'Erro ao deletar do cache: $error'),
+      (error, stack) => CacheFailure(message: 'Erro ao salvar tema: $error'),
     );
   }
 
-  TaskEither<AppFailure, void> clear() {
+  TaskEither<AppFailure, ThemeMode> getThemeMode() {
     return TaskEither.tryCatch(
       () async {
-        final box = Hive.box(_cacheBox);
-        await box.clear();
+        final box = Hive.box(HiveBoxNames.preferences);
+        final themeName = box.get(_themeModeKey) as String?;
+
+        if (themeName != null) {
+          return ThemeMode.values.firstWhere(
+            (e) => e.name == themeName,
+            orElse: () => ThemeMode.system,
+          );
+        }
+        return ThemeMode.system;
       },
-      (error, stack) => CacheFailure(message: 'Erro ao limpar cache: $error'),
+      (error, stack) => CacheFailure(message: 'Erro ao ler tema: $error'),
     );
   }
 }

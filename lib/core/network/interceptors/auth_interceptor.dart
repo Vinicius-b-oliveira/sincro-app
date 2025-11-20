@@ -1,0 +1,105 @@
+import 'package:dio/dio.dart';
+import 'package:sincro/core/constants/api_routes.dart';
+import 'package:sincro/core/storage/secure_storage_service.dart';
+import 'package:sincro/core/utils/logger.dart';
+import 'package:sincro/features/auth/data/models/token_model.dart';
+
+class AuthInterceptor extends Interceptor {
+  final SecureStorageService _storage;
+  final Dio _authDio;
+
+  AuthInterceptor(this._storage, this._authDio);
+
+  @override
+  Future<void> onRequest(
+    RequestOptions options,
+    RequestInterceptorHandler handler,
+  ) async {
+    if (ApiRoutes.publicEndpoints.any((path) => options.path.contains(path))) {
+      return handler.next(options);
+    }
+
+    final result = await _storage.getTokens().run();
+
+    result.fold(
+      (failure) {
+        log.e('Falha ao ler tokens do storage: ${failure.message}');
+        handler.next(options);
+      },
+      (tokens) {
+        if (tokens != null) {
+          options.headers['Authorization'] = 'Bearer ${tokens.accessToken}';
+        }
+        handler.next(options);
+      },
+    );
+  }
+
+  @override
+  Future<void> onError(
+    DioException err,
+    ErrorInterceptorHandler handler,
+  ) async {
+    if (err.response?.statusCode == 401 &&
+        !err.requestOptions.path.contains(ApiRoutes.login) &&
+        !err.requestOptions.path.contains(ApiRoutes.refreshToken)) {
+      log.w('⚠️ 401 Detectado. Tentando refresh token...');
+
+      final refreshResult = await _refreshToken();
+
+      if (refreshResult) {
+        log.i('🔄 Token renovado! Retentando requisição original...');
+
+        final tokensResult = await _storage.getTokens().run();
+
+        final tokens = tokensResult.getOrElse((_) => null);
+
+        if (tokens != null) {
+          err.requestOptions.headers['Authorization'] =
+              'Bearer ${tokens.accessToken}';
+        }
+
+        try {
+          final response = await _authDio.fetch(err.requestOptions);
+          return handler.resolve(response);
+        } catch (e) {
+          log.e('❌ Falha ao retentar requisição: $e');
+          return handler.next(err);
+        }
+      } else {
+        log.e('❌ Falha no refresh token. Sessão expirada.');
+        await _storage.deleteTokens().run();
+      }
+    }
+    super.onError(err, handler);
+  }
+
+  Future<bool> _refreshToken() async {
+    final tokensResult = await _storage.getTokens().run();
+
+    return tokensResult.fold((_) => false, (tokens) async {
+      if (tokens == null) return false;
+
+      try {
+        final response = await _authDio.post(
+          ApiRoutes.refreshToken,
+          data: {'refresh_token': tokens.refreshToken},
+        );
+
+        if (response.statusCode == 200 && response.data != null) {
+          final data = response.data;
+          final tokenData = data['tokens'] ?? data;
+          final newTokens = TokenModel.fromJson(tokenData);
+
+          await _storage.saveTokens(newTokens).run();
+          return true;
+        }
+        return false;
+      } catch (e) {
+        log.e('Erro no refresh: $e');
+        await _storage.deleteTokens().run();
+        return false;
+      }
+    });
+  }
+}
