@@ -15,16 +15,17 @@ import 'package:sincro/features/groups/presentation/view/groups_view.dart';
 import 'package:sincro/features/groups/presentation/view/view_members_view.dart';
 import 'package:sincro/features/home/presentation/view/home_view.dart';
 import 'package:sincro/features/profile/presentation/view/profile_view.dart';
-import 'package:sincro/features/transactions/models/transaction.dart';
 import 'package:sincro/features/transactions/presentation/view/add_transaction_view.dart';
 import 'package:sincro/features/transactions/presentation/view/history_view.dart';
-import 'package:sincro/features/transactions/presentation/view/transaction_detail_view.dart';
 
 part 'app_router.g.dart';
+
+final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
 @riverpod
 GoRouter goRouter(Ref ref) {
   return GoRouter(
+    navigatorKey: _rootNavigatorKey,
     initialLocation: AppRoutes.login,
     routes: [
       GoRoute(
@@ -32,7 +33,6 @@ GoRouter goRouter(Ref ref) {
         name: AppRoutes.splash,
         builder: (context, state) => const Placeholder(),
       ),
-
       GoRoute(
         path: AppRoutes.login,
         name: AppRoutes.login,
@@ -47,6 +47,7 @@ GoRouter goRouter(Ref ref) {
       GoRoute(
         path: AppRoutes.addTransaction,
         name: AppRoutes.addTransaction,
+        parentNavigatorKey: _rootNavigatorKey,
         pageBuilder: (context, state) {
           return const MaterialPage(
             child: AddTransactionView(),
@@ -54,165 +55,115 @@ GoRouter goRouter(Ref ref) {
           );
         },
       ),
-
       GoRoute(
         path: AppRoutes.createGroup,
         name: AppRoutes.createGroup,
+        parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const CreateGroupView(),
       ),
-
       GoRoute(
         path: AppRoutes.groupInvites,
         name: AppRoutes.groupInvites,
+        parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const GroupInvitesView(),
       ),
-
       GoRoute(
         path: AppRoutes.groupDetails,
         name: AppRoutes.groupDetails,
+        parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) {
           final groupId = state.pathParameters['id'] ?? 'ID_PADRAO';
           return GroupDetailView(groupId: groupId);
         },
       ),
-
       GoRoute(
         path: AppRoutes.groupMembers,
         name: AppRoutes.groupMembers,
+        parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) {
           final groupId = state.pathParameters['id'] ?? 'ID_PADRAO';
           return ViewMembersView(groupId: groupId);
         },
       ),
-
       GoRoute(
         path: AppRoutes.groupEdit,
         name: AppRoutes.groupEdit,
+        parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) {
           final groupId = state.pathParameters['id'] ?? 'ID_PADRAO';
           return EditGroupView(groupId: groupId);
         },
       ),
-
       GoRoute(
         path: AppRoutes.groupSettings,
         name: AppRoutes.groupSettings,
+        parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) {
           final groupId = state.pathParameters['id'] ?? 'ID_PADRAO';
           return GroupSettingsView(groupId: groupId);
         },
       ),
-
       GoRoute(
         path: AppRoutes.transactionDetail,
         name: AppRoutes.transactionDetail,
+        parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) {
           final transactionId = state.pathParameters['id'] ?? '1';
-          final id = int.tryParse(transactionId) ?? 1;
-
-          final mockTransactions = {
-            1: Transaction(
-              id: 1,
-              title: 'Uber',
-              description: 'Corrida para casa',
-              amount: '24.50',
-              type: 'expense',
-              transactionDate: DateTime.now().subtract(
-                const Duration(hours: 4),
-              ),
-              createdAt: DateTime.now().subtract(const Duration(hours: 4)),
-              isOwnedByUser: true,
-            ),
-            2: Transaction(
-              id: 2,
-              title: 'Restaurante',
-              description: 'Almoço no centro',
-              amount: '45.80',
-              type: 'expense',
-              transactionDate: DateTime.now().subtract(
-                const Duration(hours: 12),
-              ),
-              createdAt: DateTime.now().subtract(const Duration(hours: 12)),
-              isOwnedByUser: false,
-            ),
-            3: Transaction(
-              id: 3,
-              title: 'Mercado',
-              description: 'Compras da semana',
-              amount: '312.90',
-              type: 'expense',
-              transactionDate: DateTime.now().subtract(
-                const Duration(days: 1, hours: 6),
-              ),
-              createdAt: DateTime.now().subtract(
-                const Duration(days: 1, hours: 6),
-              ),
-              isOwnedByUser: false,
-            ),
-            4: Transaction(
-              id: 4,
-              title: 'Padaria',
-              description: 'Pães e café',
-              amount: '18.00',
-              type: 'expense',
-              transactionDate: DateTime.now().subtract(
-                const Duration(days: 2, hours: 10),
-              ),
-              createdAt: DateTime.now().subtract(
-                const Duration(days: 2, hours: 10),
-              ),
-              isOwnedByUser: true,
-            ),
-            5: Transaction(
-              id: 5,
-              title: 'Freelance',
-              description: 'Projeto de desenvolvimento web',
-              amount: '1200.00',
-              type: 'income',
-              transactionDate: DateTime.now().subtract(const Duration(days: 3)),
-              createdAt: DateTime.now().subtract(const Duration(days: 3)),
-              isOwnedByUser: true,
-            ),
-          };
-
-          final transaction = mockTransactions[id] ?? mockTransactions[1]!;
-          return TransactionDetailView(transaction: transaction);
+          return Scaffold(
+            appBar: AppBar(title: Text('ransação $transactionId')),
+          );
         },
       ),
-
       GoRoute(
         path: AppRoutes.analytics,
         name: AppRoutes.analytics,
+        parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) {
           final groupId = state.uri.queryParameters['groupId'];
           return AnalyticsView(groupId: groupId);
         },
       ),
 
-      ShellRoute(
-        builder: (context, state, child) {
-          return AppShell(child: child);
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) {
+          return AppShell(child: navigationShell);
         },
-        routes: [
-          GoRoute(
-            path: AppRoutes.home,
-            name: AppRoutes.home,
-            builder: (context, state) => const HomeView(),
+        branches: [
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.home,
+                name: AppRoutes.home,
+                builder: (context, state) => const HomeView(),
+              ),
+            ],
           ),
-          GoRoute(
-            path: AppRoutes.history,
-            name: AppRoutes.history,
-            builder: (context, state) => const HistoryView(),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.history,
+                name: AppRoutes.history,
+                builder: (context, state) => const HistoryView(),
+              ),
+            ],
           ),
-          GoRoute(
-            path: AppRoutes.groups,
-            name: AppRoutes.groups,
-            builder: (context, state) => const GroupsView(),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.groups,
+                name: AppRoutes.groups,
+                builder: (context, state) => const GroupsView(),
+              ),
+            ],
           ),
-          GoRoute(
-            path: AppRoutes.profile,
-            name: AppRoutes.profile,
-            builder: (context, state) => const ProfileView(),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.profile,
+                name: AppRoutes.profile,
+                builder: (context, state) => const ProfileView(),
+              ),
+            ],
           ),
         ],
       ),

@@ -27,6 +27,20 @@ class ServerFailure extends AppFailure {
 
       case DioExceptionType.badResponse:
         final responseData = e.response?.data;
+        final statusCode = e.response?.statusCode;
+
+        if (statusCode == 422 && responseData is Map<String, dynamic>) {
+          final message =
+              responseData['message']?.toString() ?? 'Erro de validação';
+
+          final errors =
+              responseData['data']?['errors'] ?? responseData['errors'];
+
+          return ValidationFailure(
+            message: message,
+            errors: errors is Map<String, dynamic> ? errors : null,
+          );
+        }
 
         if (responseData is Map<String, dynamic>) {
           if (responseData.containsKey('data') &&
@@ -46,7 +60,7 @@ class ServerFailure extends AppFailure {
           }
         }
 
-        if ((e.response?.statusCode ?? 0) >= 500) {
+        if ((statusCode ?? 0) >= 500) {
           return const ServerFailure(
             message: 'Erro inesperado no servidor. Tente novamente mais tarde.',
           );
@@ -60,18 +74,22 @@ class ServerFailure extends AppFailure {
       case DioExceptionType.cancel:
         return const ServerFailure(message: 'Requisição foi cancelada.');
 
-      case DioExceptionType.unknown:
+      default:
         if (e.error != null && e.error.toString().contains('SocketException')) {
           return const ServerFailure(message: 'Sem conexão com a internet.');
         }
-        return const ServerFailure(
-          message: 'Erro desconhecido. Tente novamente.',
-        );
-
-      default:
         return const ServerFailure(
           message: 'Erro de conexão. Verifique sua internet.',
         );
     }
   }
+}
+
+class ValidationFailure extends ServerFailure {
+  final Map<String, dynamic>? errors;
+
+  const ValidationFailure({
+    required super.message,
+    this.errors,
+  });
 }

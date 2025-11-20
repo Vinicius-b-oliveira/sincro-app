@@ -4,7 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:sincro/app.dart';
 
 import 'core/config/api_config.dart';
-import 'core/constants/hive_box_names.dart'; // Importante
+import 'core/constants/storage_keys.dart'; // Importante
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -13,8 +13,8 @@ Future<void> main() async {
 
   await Hive.initFlutter();
 
-  await Hive.openBox(HiveBoxNames.auth);
-  await Hive.openBox(HiveBoxNames.preferences);
+  await Hive.openBox(StorageKeys.authBox);
+  await Hive.openBox(StorageKeys.preferencesBox);
 
   runApp(
     const ProviderScope(

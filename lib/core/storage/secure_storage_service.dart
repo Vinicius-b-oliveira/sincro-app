@@ -1,5 +1,6 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:sincro/core/constants/storage_keys.dart';
 import 'package:sincro/core/errors/app_failure.dart';
 import 'package:sincro/core/models/token_model.dart';
 
@@ -7,9 +8,6 @@ class SecureStorageService {
   final FlutterSecureStorage _storage;
 
   SecureStorageService(this._storage);
-
-  static const _accessTokenKey = 'access_token';
-  static const _refreshTokenKey = 'refresh_token';
 
   TaskEither<AppFailure, String?> read(String key) {
     return TaskEither.tryCatch(
@@ -44,10 +42,10 @@ class SecureStorageService {
   }
 
   TaskEither<AppFailure, TokenModel?> getTokens() {
-    return read(_accessTokenKey).flatMap((accessToken) {
+    return read(StorageKeys.accessToken).flatMap((accessToken) {
       if (accessToken == null) return TaskEither.right(null);
 
-      return read(_refreshTokenKey).map((refreshToken) {
+      return read(StorageKeys.refreshToken).map((refreshToken) {
         if (refreshToken == null) return null;
 
         return TokenModel(
@@ -60,13 +58,14 @@ class SecureStorageService {
 
   TaskEither<AppFailure, void> saveTokens(TokenModel tokens) {
     return write(
-      _accessTokenKey,
+      StorageKeys.accessToken,
       tokens.accessToken,
-    ).flatMap((_) => write(_refreshTokenKey, tokens.refreshToken));
+    ).flatMap((_) => write(StorageKeys.refreshToken, tokens.refreshToken));
   }
 
-  /// Deleta os tokens sequencialmente
   TaskEither<AppFailure, void> deleteTokens() {
-    return delete(_accessTokenKey).flatMap((_) => delete(_refreshTokenKey));
+    return delete(
+      StorageKeys.accessToken,
+    ).flatMap((_) => delete(StorageKeys.refreshToken));
   }
 }

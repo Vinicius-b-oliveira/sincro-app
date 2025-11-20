@@ -8,13 +8,20 @@ class DioClient {
 
   DioClient(this._dio);
 
+  AppFailure _handleError(Object error, StackTrace stack) {
+    if (error is DioException) {
+      return ServerFailure.fromDioException(error);
+    }
+    return GeneralFailure(message: error.toString());
+  }
+
   TaskEither<AppFailure, Response> get(
     String path, {
     Map<String, dynamic>? queryParameters,
   }) {
     return TaskEither.tryCatch(
       () => _dio.get(path, queryParameters: queryParameters),
-      (error, stack) => ServerFailure.fromDioException(error as DioException),
+      _handleError,
     );
   }
 
@@ -24,7 +31,7 @@ class DioClient {
   }) {
     return TaskEither.tryCatch(
       () => _dio.post(path, data: data),
-      (error, stack) => ServerFailure.fromDioException(error as DioException),
+      _handleError,
     );
   }
 
@@ -34,7 +41,7 @@ class DioClient {
   }) {
     return TaskEither.tryCatch(
       () => _dio.put(path, data: data),
-      (error, stack) => ServerFailure.fromDioException(error as DioException),
+      _handleError,
     );
   }
 
@@ -44,7 +51,7 @@ class DioClient {
   }) {
     return TaskEither.tryCatch(
       () => _dio.patch(path, data: data),
-      (error, stack) => ServerFailure.fromDioException(error as DioException),
+      _handleError,
     );
   }
 
@@ -54,7 +61,7 @@ class DioClient {
   }) {
     return TaskEither.tryCatch(
       () => _dio.delete(path, data: data),
-      (error, stack) => ServerFailure.fromDioException(error as DioException),
+      _handleError,
     );
   }
 }
