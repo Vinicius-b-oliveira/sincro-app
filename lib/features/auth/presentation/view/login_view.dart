@@ -3,7 +3,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:sincro/core/routing/app_routes.dart';
-import 'package:sincro/core/theme/app_colors.dart';
+import 'package:sincro/core/theme/config/app_colors.dart';
 
 class LoginView extends HookConsumerWidget {
   const LoginView({super.key});
