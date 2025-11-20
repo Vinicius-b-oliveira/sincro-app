@@ -25,6 +25,7 @@ class LoginViewModel extends _$LoginViewModel {
     result.fold(
       (failure) {
         final message = switch (failure) {
+          ValidationFailure(message: final msg) => msg,
           ServerFailure(message: final msg) => msg,
           _ => failure.message,
         };
@@ -32,7 +33,6 @@ class LoginViewModel extends _$LoginViewModel {
       },
       (user) {
         ref.read(sessionProvider.notifier).setAuthenticated(user);
-
         state = LoginState.success(user);
       },
     );
