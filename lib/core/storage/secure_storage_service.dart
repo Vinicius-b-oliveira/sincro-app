@@ -1,7 +1,7 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:sincro/core/errors/app_failure.dart';
-import 'package:sincro/features/auth/data/models/token_model.dart';
+import 'package:sincro/core/models/token_model.dart';
 
 class SecureStorageService {
   final FlutterSecureStorage _storage;

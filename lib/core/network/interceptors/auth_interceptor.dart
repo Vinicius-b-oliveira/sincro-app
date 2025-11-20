@@ -2,7 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:sincro/core/constants/api_routes.dart';
 import 'package:sincro/core/storage/secure_storage_service.dart';
 import 'package:sincro/core/utils/logger.dart';
-import 'package:sincro/features/auth/data/models/token_model.dart';
+import 'package:sincro/core/models/token_model.dart';
 
 class AuthInterceptor extends Interceptor {
   final SecureStorageService _storage;
