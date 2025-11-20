@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sincro/core/routing/app_routes.dart';
+import 'package:sincro/core/session/session_notifier.dart';
+import 'package:sincro/core/session/session_state.dart';
 import 'package:sincro/core/widgets/app_shell.dart';
+import 'package:sincro/core/widgets/splash_view.dart';
 import 'package:sincro/features/analytics/presentation/view/analytics_view.dart';
 import 'package:sincro/features/auth/presentation/view/login_view.dart';
 import 'package:sincro/features/auth/presentation/view/signup_view.dart';
@@ -24,14 +27,46 @@ final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
 @riverpod
 GoRouter goRouter(Ref ref) {
+  final sessionState = ValueNotifier<SessionState>(
+    ref.read(sessionProvider),
+  );
+
+  ref.listen(
+    sessionProvider,
+    (_, next) => sessionState.value = next,
+  );
+
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
-    initialLocation: AppRoutes.login,
+    initialLocation: AppRoutes.splash,
+    refreshListenable: sessionState,
+
+    redirect: (context, state) {
+      final session = sessionState.value;
+      final isGoingTo = state.matchedLocation;
+      final isPublicRoute = AppRoutes.publicRoutes.contains(isGoingTo);
+
+      return session.when(
+        initial: () => AppRoutes.splash,
+        loading: () => AppRoutes.splash,
+        unauthenticated: () {
+          if (!isPublicRoute) return AppRoutes.login;
+          return null;
+        },
+        authenticated: (user) {
+          if (isPublicRoute || isGoingTo == AppRoutes.splash) {
+            return AppRoutes.home;
+          }
+          return null;
+        },
+      );
+    },
+
     routes: [
       GoRoute(
         path: AppRoutes.splash,
         name: AppRoutes.splash,
-        builder: (context, state) => const Placeholder(),
+        builder: (context, state) => const SplashView(),
       ),
       GoRoute(
         path: AppRoutes.login,

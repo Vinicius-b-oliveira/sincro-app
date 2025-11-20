@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:sincro/core/theme/config/app_colors.dart';
-import 'package:sincro/core/widgets/app_logo.dart';
 
 class SplashView extends StatelessWidget {
   const SplashView({super.key});
@@ -13,9 +12,9 @@ class SplashView extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const AppLogo(
-              width: 150,
-              height: 150,
+            Image.asset(
+              'assets/images/logo_dark.png',
+              height: 200,
             ),
             const SizedBox(height: 32),
             const CircularProgressIndicator(
