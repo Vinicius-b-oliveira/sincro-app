@@ -110,7 +110,7 @@ GoRouter goRouter(Ref ref) {
         builder: (context, state) {
           final transactionId = state.pathParameters['id'] ?? '1';
           return Scaffold(
-            appBar: AppBar(title: Text('ransação $transactionId')),
+            appBar: AppBar(title: Text('Transação $transactionId')),
           );
         },
       ),

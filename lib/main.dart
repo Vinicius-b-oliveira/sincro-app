@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:sincro/app.dart';
+import 'package:sincro/core/storage/hive_service.dart';
 
 import 'core/config/api_config.dart';
-import 'core/constants/storage_keys.dart'; // Importante
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -13,8 +13,7 @@ Future<void> main() async {
 
   await Hive.initFlutter();
 
-  await Hive.openBox(StorageKeys.authBox);
-  await Hive.openBox(StorageKeys.preferencesBox);
+  await HiveService.init();
 
   runApp(
     const ProviderScope(

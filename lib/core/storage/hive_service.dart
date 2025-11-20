@@ -9,6 +9,13 @@ import 'package:sincro/core/models/user_model.dart';
 import '../errors/app_failure.dart';
 
 class HiveService {
+  static Future<void> init() async {
+    await Hive.initFlutter();
+
+    await Hive.openBox(StorageKeys.authBox);
+    await Hive.openBox(StorageKeys.preferencesBox);
+  }
+
   TaskEither<AppFailure, void> saveUser(UserModel user) {
     return TaskEither.tryCatch(
       () async {
