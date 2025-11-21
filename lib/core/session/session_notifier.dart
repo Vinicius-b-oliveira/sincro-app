@@ -60,4 +60,13 @@ class SessionNotifier extends _$SessionNotifier {
   void setUnauthenticated() {
     state = const SessionState.unauthenticated();
   }
+
+  void updateUser(UserModel user) {
+    state.whenOrNull(
+      authenticated: (_) {
+        log.i('♻️ Sessão atualizada com novos dados do usuário');
+        state = SessionState.authenticated(user);
+      },
+    );
+  }
 }
