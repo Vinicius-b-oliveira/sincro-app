@@ -50,11 +50,10 @@ GoRouter goRouter(Ref ref) {
         initial: () => AppRoutes.splash,
         loading: () => AppRoutes.splash,
         unauthenticated: () {
-          // CORREÇÃO: Se estiver na Splash (que é pública), deve ser forçado a ir para o Login
           if (!isPublicRoute || isGoingTo == AppRoutes.splash) {
             return AppRoutes.login;
           }
-          return null; // Deixa ir para Signup ou permanecer no Login
+          return null;
         },
         authenticated: (user) {
           if (isPublicRoute || isGoingTo == AppRoutes.splash) {
@@ -82,7 +81,6 @@ GoRouter goRouter(Ref ref) {
         builder: (context, state) => const SignUpView(),
       ),
 
-      // Rotas Autenticadas
       GoRoute(
         path: AppRoutes.addTransaction,
         name: AppRoutes.addTransaction,

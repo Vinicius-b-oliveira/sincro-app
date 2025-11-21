@@ -1,15 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sincro/core/utils/logger.dart';
-
-part 'laravel_response_interceptor.g.dart';
-
-@riverpod
-LaravelResponseInterceptor laravelResponseInterceptor(
-  Ref ref,
-) {
-  return LaravelResponseInterceptor();
-}
 
 class LaravelResponseInterceptor extends Interceptor {
   @override
@@ -18,7 +8,6 @@ class LaravelResponseInterceptor extends Interceptor {
 
     if (data is Map<String, dynamic>) {
       final hasDataKey = data.containsKey('data');
-
       final hasPagination =
           data.containsKey('meta') || data.containsKey('links');
 

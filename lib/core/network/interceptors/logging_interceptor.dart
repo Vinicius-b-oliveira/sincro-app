@@ -1,14 +1,6 @@
 import 'package:dio/dio.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../utils/logger.dart';
-
-part 'logging_interceptor.g.dart';
-
-@riverpod
-LoggingInterceptor loggingInterceptor(Ref ref) {
-  return LoggingInterceptor();
-}
 
 class LoggingInterceptor extends Interceptor {
   @override
@@ -31,12 +23,10 @@ class LoggingInterceptor extends Interceptor {
     String errorMsg = err.message ?? 'Erro desconhecido';
     String? errorDetails;
 
-    // Tenta extrair a mensagem real do servidor (Padrão Laravel)
     if (response?.data != null) {
       final data = response!.data;
 
       if (data is Map<String, dynamic>) {
-        // Caso 1: Estrutura { data: { message: "..." } } (Mais comum na nossa API)
         if (data.containsKey('data') && data['data'] is Map) {
           final innerData = data['data'] as Map<String, dynamic>;
 
@@ -47,13 +37,9 @@ class LoggingInterceptor extends Interceptor {
           if (innerData.containsKey('errors')) {
             errorDetails = innerData['errors'].toString();
           }
-        }
-        // Caso 2: Estrutura direta { message: "..." } (Alguns erros de framework)
-        else if (data.containsKey('message')) {
+        } else if (data.containsKey('message')) {
           errorMsg = data['message'].toString();
-        }
-        // Caso 3: Estrutura { error: "..." }
-        else if (data.containsKey('error')) {
+        } else if (data.containsKey('error')) {
           errorMsg = data['error'].toString();
         }
       }

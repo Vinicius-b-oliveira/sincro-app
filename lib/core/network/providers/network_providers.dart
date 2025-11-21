@@ -11,6 +11,26 @@ import 'package:sincro/core/storage/storage_providers.dart';
 part 'network_providers.g.dart';
 
 @Riverpod(keepAlive: true)
+LoggingInterceptor loggingInterceptor(Ref ref) {
+  return LoggingInterceptor();
+}
+
+@Riverpod(keepAlive: true)
+LaravelResponseInterceptor laravelResponseInterceptor(
+  Ref ref,
+) {
+  return LaravelResponseInterceptor();
+}
+
+@Riverpod(keepAlive: true)
+AuthInterceptor authInterceptor(Ref ref) {
+  return AuthInterceptor(
+    ref.watch(secureStorageServiceProvider),
+    ref.watch(authDioProvider),
+  );
+}
+
+@Riverpod(keepAlive: true)
 Dio authDio(Ref ref) {
   final dio = Dio(
     BaseOptions(
@@ -24,19 +44,13 @@ Dio authDio(Ref ref) {
     ),
   );
 
+  dio.interceptors.add(ref.watch(laravelResponseInterceptorProvider));
+
   if (kDebugMode) {
     dio.interceptors.add(ref.watch(loggingInterceptorProvider));
   }
 
   return dio;
-}
-
-@Riverpod(keepAlive: true)
-AuthInterceptor authInterceptor(Ref ref) {
-  return AuthInterceptor(
-    ref.watch(secureStorageServiceProvider),
-    ref.watch(authDioProvider),
-  );
 }
 
 @Riverpod(keepAlive: true)
@@ -63,7 +77,6 @@ Dio dio(Ref ref) {
   return dio;
 }
 
-// 4. Cliente HTTP Abstraído (TaskEither)
 @Riverpod(keepAlive: true)
 DioClient dioClient(Ref ref) {
   return DioClient(ref.watch(dioProvider));

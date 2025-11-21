@@ -19,7 +19,7 @@ class HiveService {
   TaskEither<AppFailure, void> saveUser(UserModel user) {
     return TaskEither.tryCatch(
       () async {
-        final box = Hive.box(StorageKeys.authBox); // Uso da constante
+        final box = Hive.box(StorageKeys.authBox);
         await box.put(StorageKeys.userProfile, jsonEncode(user.toJson()));
       },
       (error, stack) => CacheFailure(message: 'Erro ao salvar usuário: $error'),
