@@ -27,9 +27,49 @@ class LoggingInterceptor extends Interceptor {
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
-    log.e(
-      '❌ ERROR [${err.response?.statusCode}] => PATH: ${err.requestOptions.path}\nMSG: ${err.message}',
-    );
+    final response = err.response;
+    String errorMsg = err.message ?? 'Erro desconhecido';
+    String? errorDetails;
+
+    // Tenta extrair a mensagem real do servidor (Padrão Laravel)
+    if (response?.data != null) {
+      final data = response!.data;
+
+      if (data is Map<String, dynamic>) {
+        // Caso 1: Estrutura { data: { message: "..." } } (Mais comum na nossa API)
+        if (data.containsKey('data') && data['data'] is Map) {
+          final innerData = data['data'] as Map<String, dynamic>;
+
+          if (innerData.containsKey('message')) {
+            errorMsg = innerData['message'].toString();
+          }
+
+          if (innerData.containsKey('errors')) {
+            errorDetails = innerData['errors'].toString();
+          }
+        }
+        // Caso 2: Estrutura direta { message: "..." } (Alguns erros de framework)
+        else if (data.containsKey('message')) {
+          errorMsg = data['message'].toString();
+        }
+        // Caso 3: Estrutura { error: "..." }
+        else if (data.containsKey('error')) {
+          errorMsg = data['error'].toString();
+        }
+      }
+    }
+
+    final logMsg = StringBuffer()
+      ..writeln(
+        '❌ ERROR [${response?.statusCode}] => PATH: ${err.requestOptions.path}',
+      )
+      ..writeln('⛔ MSG: $errorMsg');
+
+    if (errorDetails != null) {
+      logMsg.writeln('🔍 DETAILS: $errorDetails');
+    }
+
+    log.e(logMsg.toString());
     super.onError(err, handler);
   }
 }
