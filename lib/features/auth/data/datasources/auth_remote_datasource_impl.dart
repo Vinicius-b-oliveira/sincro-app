@@ -49,7 +49,12 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   }
 
   @override
-  TaskEither<AppFailure, void> logout() {
-    return _client.post(ApiRoutes.logout).map((_) {});
+  TaskEither<AppFailure, void> logout({required String refreshToken}) {
+    return _client
+        .post(
+          ApiRoutes.logout,
+          data: {'refresh_token': refreshToken},
+        )
+        .map((_) {});
   }
 }

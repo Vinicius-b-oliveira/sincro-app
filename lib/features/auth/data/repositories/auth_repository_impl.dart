@@ -56,13 +56,18 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   TaskEither<AppFailure, void> logout() {
-    return _remoteDataSource
-        .logout()
-        .orElse((_) => TaskEither<AppFailure, void>.of(null))
-        .flatMap(
-          (_) => _secureStorage.deleteTokens().flatMap(
-            (_) => _hiveService.deleteUser(),
-          ),
+    return _secureStorage.getTokens().flatMap((tokens) {
+      if (tokens == null) {
+        return _secureStorage.deleteTokens().flatMap(
+          (_) => _hiveService.deleteUser(),
         );
+      }
+
+      return _remoteDataSource
+          .logout(refreshToken: tokens.refreshToken)
+          .orElse((_) => TaskEither<AppFailure, void>.of(null))
+          .flatMap((_) => _secureStorage.deleteTokens())
+          .flatMap((_) => _hiveService.deleteUser());
+    });
   }
 }

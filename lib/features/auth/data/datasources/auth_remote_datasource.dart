@@ -15,5 +15,5 @@ abstract class AuthRemoteDataSource {
     required String passwordConfirmation,
   });
 
-  TaskEither<AppFailure, void> logout();
+  TaskEither<AppFailure, void> logout({required String refreshToken});
 }
