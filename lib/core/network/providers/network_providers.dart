@@ -4,6 +4,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sincro/core/config/api_config.dart';
 import 'package:sincro/core/network/dio_client.dart';
 import 'package:sincro/core/network/interceptors/auth_interceptor.dart';
+import 'package:sincro/core/network/interceptors/laravel_response_interceptor.dart';
 import 'package:sincro/core/network/interceptors/logging_interceptor.dart';
 import 'package:sincro/core/storage/storage_providers.dart';
 
@@ -30,7 +31,6 @@ Dio authDio(Ref ref) {
   return dio;
 }
 
-// 2. Interceptor de Auth - Recebe o Dio Limpo
 @Riverpod(keepAlive: true)
 AuthInterceptor authInterceptor(Ref ref) {
   return AuthInterceptor(
@@ -39,7 +39,6 @@ AuthInterceptor authInterceptor(Ref ref) {
   );
 }
 
-// 3. Dio Principal - Usado pela aplicação
 @Riverpod(keepAlive: true)
 Dio dio(Ref ref) {
   final dio = Dio(
@@ -54,8 +53,8 @@ Dio dio(Ref ref) {
     ),
   );
 
-  // Adiciona AuthInterceptor E Logging
   dio.interceptors.add(ref.watch(authInterceptorProvider));
+  dio.interceptors.add(ref.watch(laravelResponseInterceptorProvider));
 
   if (kDebugMode) {
     dio.interceptors.add(ref.watch(loggingInterceptorProvider));

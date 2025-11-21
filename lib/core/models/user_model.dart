@@ -10,7 +10,6 @@ abstract class UserModel with _$UserModel {
     required String name,
     required String email,
     @JsonKey(name: 'favorite_group_id') int? favoriteGroupId,
-    @JsonKey(name: 'created_at') required DateTime createdAt,
   }) = _UserModel;
 
   factory UserModel.fromJson(Map<String, dynamic> json) =>
