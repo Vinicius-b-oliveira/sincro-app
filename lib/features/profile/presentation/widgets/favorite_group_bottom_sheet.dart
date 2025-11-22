@@ -1,19 +1,78 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:sincro/core/session/session_notifier.dart';
+import 'package:sincro/core/session/session_state.dart';
+import 'package:sincro/features/profile/presentation/viewmodels/profile/profile_state.dart';
+import 'package:sincro/features/profile/presentation/viewmodels/profile/profile_viewmodel.dart';
 
-class FavoriteGroupBottomSheet extends HookWidget {
+class FavoriteGroupBottomSheet extends HookConsumerWidget {
   const FavoriteGroupBottomSheet({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final selectedGroup = useState<String?>(null);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final groups = useState<List<Map<String, dynamic>>>([]);
+    final isLoadingGroups = useState(true);
+
+    final selectedGroupId = useState<int?>(null);
+
+    final sessionState = ref.watch(sessionProvider);
+    final currentUser = sessionState.whenOrNull(authenticated: (user) => user);
+    final currentFavoriteId = currentUser?.favoriteGroupId;
+
+    final profileState = ref.watch(profileViewModelProvider);
 
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
 
-    // TODO: Substituir por dados reais do provider/API
-    final groups = _getMockGroups();
+    useEffect(() {
+      Future<void> loadGroups() async {
+        try {
+          final fetchedGroups = await ref
+              .read(profileViewModelProvider.notifier)
+              .getAvailableGroups();
+
+          groups.value = fetchedGroups.cast<Map<String, dynamic>>();
+
+          if (currentFavoriteId != null) {
+            selectedGroupId.value = currentFavoriteId;
+          }
+        } finally {
+          isLoadingGroups.value = false;
+        }
+      }
+
+      loadGroups();
+      return null;
+    }, []);
+
+    Future<void> saveFavorite() async {
+      if (selectedGroupId.value != null) {
+        await ref
+            .read(profileViewModelProvider.notifier)
+            .updateFavoriteGroup(
+              selectedGroupId.value,
+            );
+
+        final currentState = ref.read(profileViewModelProvider);
+        currentState.maybeWhen(
+          error: (_) {},
+          orElse: () {
+            if (context.mounted) {
+              Navigator.of(context).pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text('Grupo favorito atualizado!'),
+                  backgroundColor: colorScheme.primary,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            }
+          },
+        );
+      }
+    }
 
     return Container(
       padding: const EdgeInsets.all(24.0),
@@ -22,6 +81,9 @@ class FavoriteGroupBottomSheet extends HookWidget {
         borderRadius: const BorderRadius.vertical(
           top: Radius.circular(20),
         ),
+      ),
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.8,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -55,18 +117,34 @@ class FavoriteGroupBottomSheet extends HookWidget {
           ),
           const SizedBox(height: 24),
 
-          if (groups.isEmpty)
-            _buildEmptyState(colorScheme, textTheme)
-          else
-            ...groups.map(
-              (group) => _GroupItem(
-                group: group,
-                isSelected: selectedGroup.value == group.id,
-                onTap: () => selectedGroup.value = group.id,
-                colorScheme: colorScheme,
-                textTheme: textTheme,
-              ),
-            ),
+          Flexible(
+            child: isLoadingGroups.value
+                ? const Center(child: CircularProgressIndicator())
+                : groups.value.isEmpty
+                ? _buildEmptyState(colorScheme, textTheme)
+                : ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: groups.value.length,
+                    itemBuilder: (context, index) {
+                      final group = groups.value[index];
+                      final id = group['id'] as int;
+                      final name = group['name'] as String;
+                      final memberCount = group['members_count'] as int? ?? 0;
+                      final isCurrentFavorite = id == currentFavoriteId;
+
+                      return _GroupItem(
+                        id: id,
+                        name: name,
+                        memberCount: memberCount,
+                        isCurrentFavorite: isCurrentFavorite,
+                        isSelected: selectedGroupId.value == id,
+                        onTap: () => selectedGroupId.value = id,
+                        colorScheme: colorScheme,
+                        textTheme: textTheme,
+                      );
+                    },
+                  ),
+          ),
 
           const SizedBox(height: 24),
 
@@ -74,7 +152,11 @@ class FavoriteGroupBottomSheet extends HookWidget {
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: () => Navigator.of(context).pop(),
+                  onPressed: profileState.maybeWhen(
+                    loading: () => null,
+                    orElse: () =>
+                        () => Navigator.of(context).pop(),
+                  ),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: colorScheme.onSurface,
                     side: BorderSide(color: colorScheme.outline),
@@ -89,13 +171,11 @@ class FavoriteGroupBottomSheet extends HookWidget {
               const SizedBox(width: 16),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: selectedGroup.value != null
-                      ? () => _saveFavoriteGroup(
-                          context,
-                          selectedGroup.value!,
-                          groups,
-                        )
-                      : null,
+                  onPressed: profileState.maybeWhen(
+                    loading: () => null,
+                    orElse: () =>
+                        selectedGroupId.value != null ? saveFavorite : null,
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: colorScheme.primary,
                     foregroundColor: colorScheme.onPrimary,
@@ -104,11 +184,23 @@ class FavoriteGroupBottomSheet extends HookWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: Text(
-                    'Salvar',
-                    style: textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.onPrimary,
+                  child: profileState.maybeWhen(
+                    loading: () => SizedBox(
+                      height: 16,
+                      width: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation(
+                          colorScheme.onPrimary,
+                        ),
+                      ),
+                    ),
+                    orElse: () => Text(
+                      'Salvar',
+                      style: textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onPrimary,
+                      ),
                     ),
                   ),
                 ),
@@ -154,78 +246,23 @@ class FavoriteGroupBottomSheet extends HookWidget {
       ),
     );
   }
-
-  List<FavoriteGroup> _getMockGroups() {
-    return [
-      FavoriteGroup(
-        id: '1',
-        name: 'Ap. 101',
-        memberCount: 4,
-        isFavorite: true,
-      ),
-      FavoriteGroup(
-        id: '2',
-        name: 'Viagem FDS',
-        memberCount: 6,
-        isFavorite: false,
-      ),
-      FavoriteGroup(
-        id: '3',
-        name: 'Presente da Mãe',
-        memberCount: 3,
-        isFavorite: false,
-      ),
-      FavoriteGroup(
-        id: '4',
-        name: 'Contas da Casa',
-        memberCount: 2,
-        isFavorite: false,
-      ),
-    ];
-  }
-
-  void _saveFavoriteGroup(
-    BuildContext context,
-    String groupId,
-    List<FavoriteGroup> groups,
-  ) {
-    final selectedGroup = groups.firstWhere((g) => g.id == groupId);
-    Navigator.of(context).pop();
-
-    // TODO: Implementar salvamento real
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('"${selectedGroup.name}" definido como grupo favorito'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-}
-
-class FavoriteGroup {
-  final String id;
-  final String name;
-  final int memberCount;
-  final bool isFavorite;
-
-  FavoriteGroup({
-    required this.id,
-    required this.name,
-    required this.memberCount,
-    required this.isFavorite,
-  });
 }
 
 class _GroupItem extends StatelessWidget {
-  final FavoriteGroup group;
+  final int id;
+  final String name;
+  final int memberCount;
+  final bool isCurrentFavorite;
   final bool isSelected;
   final VoidCallback onTap;
   final ColorScheme colorScheme;
   final TextTheme textTheme;
 
   const _GroupItem({
-    required this.group,
+    required this.id,
+    required this.name,
+    required this.memberCount,
+    required this.isCurrentFavorite,
     required this.isSelected,
     required this.onTap,
     required this.colorScheme,
@@ -268,7 +305,7 @@ class _GroupItem extends StatelessWidget {
                   ),
                   child: Center(
                     child: Text(
-                      group.name[0].toUpperCase(),
+                      name.isNotEmpty ? name[0].toUpperCase() : '?',
                       style: textTheme.titleMedium?.copyWith(
                         color: isSelected
                             ? colorScheme.onPrimary
@@ -288,7 +325,7 @@ class _GroupItem extends StatelessWidget {
                         children: [
                           Expanded(
                             child: Text(
-                              group.name,
+                              name,
                               style: textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.w600,
                                 color: isSelected
@@ -297,7 +334,7 @@ class _GroupItem extends StatelessWidget {
                               ),
                             ),
                           ),
-                          if (group.isFavorite)
+                          if (isCurrentFavorite)
                             Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 8,
@@ -321,7 +358,7 @@ class _GroupItem extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${group.memberCount} ${group.memberCount == 1 ? 'membro' : 'membros'}',
+                        '$memberCount ${memberCount == 1 ? 'membro' : 'membros'}',
                         style: textTheme.bodySmall?.copyWith(
                           color: colorScheme.onSurfaceVariant,
                         ),
