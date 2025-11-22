@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:sincro/core/utils/validators.dart';
 import 'package:sincro/features/profile/presentation/viewmodels/profile/profile_state.dart';
 import 'package:sincro/features/profile/presentation/viewmodels/profile/profile_viewmodel.dart';
 
@@ -153,12 +154,9 @@ class EditPasswordBottomSheet extends HookConsumerWidget {
                         alpha: 0.3,
                       ),
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Por favor, digite sua senha atual';
-                      }
-                      return null;
-                    },
+                    validator: AppValidators.required(
+                      'Por favor, digite sua senha atual',
+                    ),
                   ),
                   const SizedBox(height: 16),
 
@@ -202,18 +200,20 @@ class EditPasswordBottomSheet extends HookConsumerWidget {
                         alpha: 0.3,
                       ),
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Por favor, digite a nova senha';
-                      }
-                      if (value.length < 8) {
-                        return 'A senha deve ter pelo menos 8 caracteres';
-                      }
-                      if (value == currentPasswordController.text) {
-                        return 'A nova senha deve ser diferente da atual';
-                      }
-                      return null;
-                    },
+                    validator: AppValidators.compose([
+                      AppValidators.required('Por favor, digite a nova senha'),
+                      AppValidators.minLength(
+                        8,
+                        'A senha deve ter pelo menos 8 caracteres',
+                      ),
+                      (value) {
+                        if (value != null &&
+                            value == currentPasswordController.text) {
+                          return 'A nova senha deve ser diferente da atual';
+                        }
+                        return null;
+                      },
+                    ]),
                   ),
                   const SizedBox(height: 16),
 
@@ -258,15 +258,10 @@ class EditPasswordBottomSheet extends HookConsumerWidget {
                         alpha: 0.3,
                       ),
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Por favor, confirme a nova senha';
-                      }
-                      if (value != newPasswordController.text) {
-                        return 'As senhas não coincidem';
-                      }
-                      return null;
-                    },
+                    validator: AppValidators.match(
+                      newPasswordController,
+                      'As senhas não coincidem',
+                    ),
                     onFieldSubmitted: (_) => savePassword(),
                   ),
                   const SizedBox(height: 8),

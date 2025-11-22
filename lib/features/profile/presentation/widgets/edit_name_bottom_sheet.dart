@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:sincro/core/utils/validators.dart';
 import 'package:sincro/features/profile/presentation/viewmodels/profile/profile_state.dart';
 import 'package:sincro/features/profile/presentation/viewmodels/profile/profile_viewmodel.dart';
 
@@ -111,9 +112,11 @@ class EditNameBottomSheet extends HookConsumerWidget {
               autofocus: true,
               textInputAction: TextInputAction.done,
               textCapitalization: TextCapitalization.words,
+              maxLength: 50,
               decoration: InputDecoration(
                 labelText: 'Nome completo',
                 hintText: 'Digite seu nome',
+                counterText: '',
                 prefixIcon: Icon(
                   Icons.person_outline,
                   color: colorScheme.onSurfaceVariant,
@@ -136,18 +139,13 @@ class EditNameBottomSheet extends HookConsumerWidget {
                   alpha: 0.3,
                 ),
               ),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Por favor, digite seu nome';
-                }
-                if (value.trim().length < 2) {
-                  return 'O nome deve ter pelo menos 2 caracteres';
-                }
-                if (value.trim().length > 50) {
-                  return 'O nome deve ter no máximo 50 caracteres';
-                }
-                return null;
-              },
+              validator: AppValidators.compose([
+                AppValidators.required('Por favor, digite seu nome'),
+                AppValidators.minLength(
+                  2,
+                  'O nome deve ter pelo menos 2 caracteres',
+                ),
+              ]),
               onFieldSubmitted: (_) => saveName(),
             ),
           ),
