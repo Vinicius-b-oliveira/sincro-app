@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:sincro/features/profile/presentation/viewmodels/profile/profile_state.dart';
+import 'package:sincro/features/profile/presentation/viewmodels/profile/profile_viewmodel.dart';
 
-class EditNameBottomSheet extends HookWidget {
+class EditNameBottomSheet extends HookConsumerWidget {
   final String currentName;
 
   const EditNameBottomSheet({
@@ -10,14 +13,47 @@ class EditNameBottomSheet extends HookWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final nameController = useTextEditingController(text: currentName);
     final formKey = useMemoized(() => GlobalKey<FormState>());
-    final isLoading = useState(false);
+
+    final autovalidateMode = useState(AutovalidateMode.disabled);
+
+    final profileState = ref.watch(profileViewModelProvider);
 
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
+
+    Future<void> saveName() async {
+      if (formKey.currentState!.validate()) {
+        await ref
+            .read(profileViewModelProvider.notifier)
+            .updateName(
+              nameController.text.trim(),
+            );
+
+        final currentState = ref.read(profileViewModelProvider);
+
+        currentState.maybeWhen(
+          error: (_) {},
+          orElse: () {
+            if (context.mounted) {
+              Navigator.of(context).pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text('Nome alterado com sucesso!'),
+                  backgroundColor: colorScheme.primary,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            }
+          },
+        );
+      } else {
+        autovalidateMode.value = AutovalidateMode.onUserInteraction;
+      }
+    }
 
     return Container(
       padding: EdgeInsets.only(
@@ -69,6 +105,7 @@ class EditNameBottomSheet extends HookWidget {
 
           Form(
             key: formKey,
+            autovalidateMode: autovalidateMode.value,
             child: TextFormField(
               controller: nameController,
               autofocus: true,
@@ -111,12 +148,7 @@ class EditNameBottomSheet extends HookWidget {
                 }
                 return null;
               },
-              onFieldSubmitted: (_) => _saveName(
-                context,
-                formKey,
-                nameController.text,
-                isLoading,
-              ),
+              onFieldSubmitted: (_) => saveName(),
             ),
           ),
           const SizedBox(height: 24),
@@ -125,9 +157,11 @@ class EditNameBottomSheet extends HookWidget {
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: isLoading.value
-                      ? null
-                      : () => Navigator.of(context).pop(),
+                  onPressed: profileState.maybeWhen(
+                    loading: () => null,
+                    orElse: () =>
+                        () => Navigator.of(context).pop(),
+                  ),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: colorScheme.onSurface,
                     side: BorderSide(color: colorScheme.outline),
@@ -142,14 +176,10 @@ class EditNameBottomSheet extends HookWidget {
               const SizedBox(width: 16),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: isLoading.value
-                      ? null
-                      : () => _saveName(
-                          context,
-                          formKey,
-                          nameController.text,
-                          isLoading,
-                        ),
+                  onPressed: profileState.maybeWhen(
+                    loading: () => null,
+                    orElse: () => saveName,
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: colorScheme.primary,
                     foregroundColor: colorScheme.onPrimary,
@@ -158,24 +188,25 @@ class EditNameBottomSheet extends HookWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: isLoading.value
-                      ? SizedBox(
-                          height: 16,
-                          width: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation(
-                              colorScheme.onPrimary,
-                            ),
-                          ),
-                        )
-                      : Text(
-                          'Salvar',
-                          style: textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: colorScheme.onPrimary,
-                          ),
+                  child: profileState.maybeWhen(
+                    loading: () => SizedBox(
+                      height: 16,
+                      width: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation(
+                          colorScheme.onPrimary,
                         ),
+                      ),
+                    ),
+                    orElse: () => Text(
+                      'Salvar',
+                      style: textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onPrimary,
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -183,32 +214,5 @@ class EditNameBottomSheet extends HookWidget {
         ],
       ),
     );
-  }
-
-  void _saveName(
-    BuildContext context,
-    GlobalKey<FormState> formKey,
-    String newName,
-    ValueNotifier<bool> isLoading,
-  ) async {
-    if (formKey.currentState!.validate()) {
-      isLoading.value = true;
-
-      // TODO: Implementar salvamento real
-      await Future.delayed(const Duration(seconds: 1));
-
-      isLoading.value = false;
-
-      if (context.mounted) {
-        Navigator.of(context).pop(newName.trim());
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Nome alterado com sucesso!'),
-            backgroundColor: Theme.of(context).colorScheme.primary,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    }
   }
 }
