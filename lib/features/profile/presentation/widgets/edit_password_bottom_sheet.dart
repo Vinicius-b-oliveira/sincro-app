@@ -1,24 +1,62 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:sincro/features/profile/presentation/viewmodels/profile/profile_state.dart';
+import 'package:sincro/features/profile/presentation/viewmodels/profile/profile_viewmodel.dart';
 
-class EditPasswordBottomSheet extends HookWidget {
+class EditPasswordBottomSheet extends HookConsumerWidget {
   const EditPasswordBottomSheet({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final currentPasswordController = useTextEditingController();
     final newPasswordController = useTextEditingController();
     final confirmPasswordController = useTextEditingController();
     final formKey = useMemoized(() => GlobalKey<FormState>());
 
-    final isLoading = useState(false);
+    final autovalidateMode = useState(AutovalidateMode.disabled);
+
     final obscureCurrentPassword = useState(true);
     final obscureNewPassword = useState(true);
     final obscureConfirmPassword = useState(true);
 
+    final profileState = ref.watch(profileViewModelProvider);
+
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
+
+    Future<void> savePassword() async {
+      if (formKey.currentState!.validate()) {
+        await ref
+            .read(profileViewModelProvider.notifier)
+            .updatePassword(
+              currentPassword: currentPasswordController.text,
+              newPassword: newPasswordController.text,
+              newPasswordConfirmation: confirmPasswordController.text,
+            );
+
+        final currentState = ref.read(profileViewModelProvider);
+
+        currentState.maybeWhen(
+          error: (_) {},
+          orElse: () {
+            if (context.mounted) {
+              Navigator.of(context).pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text('Senha alterada com sucesso!'),
+                  backgroundColor: colorScheme.primary,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            }
+          },
+        );
+      } else {
+        autovalidateMode.value = AutovalidateMode.onUserInteraction;
+      }
+    }
 
     return Container(
       padding: EdgeInsets.only(
@@ -71,6 +109,7 @@ class EditPasswordBottomSheet extends HookWidget {
 
             Form(
               key: formKey,
+              autovalidateMode: autovalidateMode.value,
               child: Column(
                 children: [
                   TextFormField(
@@ -167,8 +206,8 @@ class EditPasswordBottomSheet extends HookWidget {
                       if (value == null || value.isEmpty) {
                         return 'Por favor, digite a nova senha';
                       }
-                      if (value.length < 6) {
-                        return 'A senha deve ter pelo menos 6 caracteres';
+                      if (value.length < 8) {
+                        return 'A senha deve ter pelo menos 8 caracteres';
                       }
                       if (value == currentPasswordController.text) {
                         return 'A nova senha deve ser diferente da atual';
@@ -228,13 +267,7 @@ class EditPasswordBottomSheet extends HookWidget {
                       }
                       return null;
                     },
-                    onFieldSubmitted: (_) => _savePassword(
-                      context,
-                      formKey,
-                      currentPasswordController.text,
-                      newPasswordController.text,
-                      isLoading,
-                    ),
+                    onFieldSubmitted: (_) => savePassword(),
                   ),
                   const SizedBox(height: 8),
 
@@ -256,7 +289,7 @@ class EditPasswordBottomSheet extends HookWidget {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'Use uma senha forte com pelo menos 6 caracteres',
+                            'Use uma senha forte com pelo menos 8 caracteres',
                             style: textTheme.bodySmall?.copyWith(
                               color: colorScheme.onSurfaceVariant,
                             ),
@@ -274,9 +307,11 @@ class EditPasswordBottomSheet extends HookWidget {
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: isLoading.value
-                        ? null
-                        : () => Navigator.of(context).pop(),
+                    onPressed: profileState.maybeWhen(
+                      loading: () => null,
+                      orElse: () =>
+                          () => Navigator.of(context).pop(),
+                    ),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: colorScheme.onSurface,
                       side: BorderSide(color: colorScheme.outline),
@@ -291,15 +326,10 @@ class EditPasswordBottomSheet extends HookWidget {
                 const SizedBox(width: 16),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: isLoading.value
-                        ? null
-                        : () => _savePassword(
-                            context,
-                            formKey,
-                            currentPasswordController.text,
-                            newPasswordController.text,
-                            isLoading,
-                          ),
+                    onPressed: profileState.maybeWhen(
+                      loading: () => null,
+                      orElse: () => savePassword,
+                    ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: colorScheme.primary,
                       foregroundColor: colorScheme.onPrimary,
@@ -308,24 +338,25 @@ class EditPasswordBottomSheet extends HookWidget {
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    child: isLoading.value
-                        ? SizedBox(
-                            height: 16,
-                            width: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation(
-                                colorScheme.onPrimary,
-                              ),
-                            ),
-                          )
-                        : Text(
-                            'Alterar senha',
-                            style: textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: colorScheme.onPrimary,
-                            ),
+                    child: profileState.maybeWhen(
+                      loading: () => SizedBox(
+                        height: 16,
+                        width: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation(
+                            colorScheme.onPrimary,
                           ),
+                        ),
+                      ),
+                      orElse: () => Text(
+                        'Alterar senha',
+                        style: textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: colorScheme.onPrimary,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -334,33 +365,5 @@ class EditPasswordBottomSheet extends HookWidget {
         ),
       ),
     );
-  }
-
-  void _savePassword(
-    BuildContext context,
-    GlobalKey<FormState> formKey,
-    String currentPassword,
-    String newPassword,
-    ValueNotifier<bool> isLoading,
-  ) async {
-    if (formKey.currentState!.validate()) {
-      isLoading.value = true;
-
-      // TODO: Implementar alteração real da senha
-      await Future.delayed(const Duration(seconds: 2));
-
-      isLoading.value = false;
-
-      if (context.mounted) {
-        Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Senha alterada com sucesso!'),
-            backgroundColor: Theme.of(context).colorScheme.primary,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    }
   }
 }
