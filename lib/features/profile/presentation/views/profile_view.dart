@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:sincro/core/routing/app_routes.dart';
+import 'package:sincro/core/session/session_notifier.dart';
+import 'package:sincro/core/session/session_state.dart';
 import 'package:sincro/core/theme/theme_notifier.dart';
+import 'package:sincro/features/profile/presentation/viewmodels/profile/profile_state.dart';
+import 'package:sincro/features/profile/presentation/viewmodels/profile/profile_viewmodel.dart';
 import 'package:sincro/features/profile/presentation/widgets/edit_name_bottom_sheet.dart';
 import 'package:sincro/features/profile/presentation/widgets/edit_password_bottom_sheet.dart';
 import 'package:sincro/features/profile/presentation/widgets/favorite_group_bottom_sheet.dart';
@@ -12,12 +14,31 @@ class ProfileView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final themeMode = ref.watch(themeProvider);
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
 
-    final isDarkMode = themeMode == ThemeMode.dark;
+    final isDarkMode = theme.brightness == Brightness.dark;
+
+    final sessionState = ref.watch(sessionProvider);
+    final user = sessionState.whenOrNull(
+      authenticated: (user) => user,
+    );
+
+    final profileState = ref.watch(profileViewModelProvider);
+
+    ref.listen(profileViewModelProvider, (_, next) {
+      next.whenOrNull(
+        error: (message) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(message),
+              backgroundColor: colorScheme.error,
+            ),
+          );
+        },
+      );
+    });
 
     return Scaffold(
       body: SingleChildScrollView(
@@ -33,7 +54,7 @@ class ProfileView extends ConsumerWidget {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: colorScheme.secondary,
                   foregroundColor: colorScheme.onSecondary,
-                  textStyle: TextStyle(
+                  textStyle: const TextStyle(
                     fontWeight: FontWeight.bold,
                   ),
                   padding: const EdgeInsets.symmetric(vertical: 12),
@@ -73,6 +94,7 @@ class ProfileView extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 48),
+
               CircleAvatar(
                 radius: 60,
                 backgroundColor: colorScheme.secondary.withValues(alpha: 0.5),
@@ -83,15 +105,16 @@ class ProfileView extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 16),
+
               Text(
-                'NOME',
+                user?.name ?? 'Carregando...',
                 textAlign: TextAlign.center,
                 style: textTheme.headlineLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
               ),
               Text(
-                'e-mail',
+                user?.email ?? '',
                 textAlign: TextAlign.center,
                 style: textTheme.titleMedium?.copyWith(
                   color: colorScheme.onSurfaceVariant,
@@ -104,14 +127,16 @@ class ProfileView extends ConsumerWidget {
                 children: [
                   TextButton(
                     onPressed: () {
-                      showModalBottomSheet(
-                        context: context,
-                        isScrollControlled: true,
-                        backgroundColor: Colors.transparent,
-                        builder: (context) => const EditNameBottomSheet(
-                          currentName: 'NOME',
-                        ),
-                      );
+                      if (user != null) {
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (context) => EditNameBottomSheet(
+                            currentName: user.name,
+                          ),
+                        );
+                      }
                     },
                     child: Text(
                       'alterar nome',
@@ -145,17 +170,32 @@ class ProfileView extends ConsumerWidget {
               const SizedBox(height: 48),
 
               ElevatedButton(
-                onPressed: () => context.go(AppRoutes.login),
+                onPressed: profileState.maybeWhen(
+                  loading: () => null,
+                  orElse: () => () {
+                    ref.read(profileViewModelProvider.notifier).logout();
+                  },
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: colorScheme.error,
                   foregroundColor: colorScheme.onError,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
-                child: Text(
-                  'Sair da conta',
-                  style: textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: colorScheme.onError,
+                child: profileState.maybeWhen(
+                  loading: () => SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      color: colorScheme.onError,
+                      strokeWidth: 2,
+                    ),
+                  ),
+                  orElse: () => Text(
+                    'Sair da conta',
+                    style: textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.onError,
+                    ),
                   ),
                 ),
               ),

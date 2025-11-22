@@ -2,7 +2,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sincro/core/errors/app_failure.dart';
 import 'package:sincro/core/session/session_notifier.dart';
 import 'package:sincro/features/auth/auth_providers.dart';
-import 'package:sincro/features/profile/presentation/viewmodels/profile_state.dart';
+import 'package:sincro/features/profile/presentation/viewmodels/profile/profile_state.dart';
 import 'package:sincro/features/profile/profile_providers.dart';
 
 part 'profile_viewmodel.g.dart';
