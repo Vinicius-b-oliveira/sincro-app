@@ -15,18 +15,11 @@ class ProfileViewModel extends _$ProfileViewModel {
   }
 
   Future<void> logout() async {
-    state = const ProfileState.loading();
-    final repository = ref.read(authRepositoryProvider);
+    ref.read(sessionProvider.notifier).setUnauthenticated();
 
-    final result = await repository.logout().run();
+    ref.read(authRepositoryProvider).logout().run();
 
-    result.fold(
-      (failure) => _setErrorState(failure),
-      (_) {
-        ref.read(sessionProvider.notifier).setUnauthenticated();
-        state = const ProfileState.initial();
-      },
-    );
+    state = const ProfileState.initial();
   }
 
   Future<void> updateName(String newName) async {
