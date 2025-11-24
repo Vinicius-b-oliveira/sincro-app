@@ -1,18 +1,39 @@
 class TransactionCategories {
   static const List<String> income = [
-    'Salário',
+    'Aluguel Recebido',
+    'Bônus',
+    'Cashback',
+    'Dividendos',
     'Freelance',
     'Investimentos',
     'Presente',
+    'Reembolso',
+    'Salário',
+    'Vendas',
     'Outros',
   ];
 
   static const List<String> expense = [
     'Alimentação',
-    'Transporte',
+    'Assinaturas',
+    'Beleza',
+    'Casa',
+    'Compras',
+    'Contas',
+    'Dívidas',
+    'Doações',
+    'Educação',
+    'Eletrônicos',
+    'Impostos',
     'Lazer',
+    'Mercado',
     'Moradia',
+    'Pets',
     'Saúde',
+    'Serviços',
+    'Transporte',
+    'Vestuário',
+    'Viagem',
     'Outros',
   ];
 
