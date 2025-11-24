@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sincro/core/models/user_model.dart';
+import 'package:sincro/core/session/auth_event_notifier.dart'; // <--- NOVO IMPORT
 import 'package:sincro/core/session/session_state.dart';
 import 'package:sincro/core/storage/storage_providers.dart';
 import 'package:sincro/core/utils/logger.dart';
@@ -10,6 +11,13 @@ part 'session_notifier.g.dart';
 class SessionNotifier extends _$SessionNotifier {
   @override
   SessionState build() {
+    ref.listen(authEventProvider, (_, next) {
+      if (next == AuthEvent.forceLogout) {
+        log.w('🚨 Recebido evento de Force Logout. Encerrando sessão...');
+        setUnauthenticated();
+      }
+    });
+
     Future.microtask(() => _restoreSession());
     return const SessionState.initial();
   }
