@@ -12,6 +12,7 @@ abstract class TransactionRepository {
     DateTime? startDate,
     DateTime? endDate,
     int? groupId,
+    List<String>? categories,
   });
 
   TaskEither<AppFailure, TransactionModel> createTransaction({

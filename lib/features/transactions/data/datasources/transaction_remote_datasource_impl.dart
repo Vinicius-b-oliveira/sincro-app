@@ -21,6 +21,7 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
     DateTime? startDate,
     DateTime? endDate,
     int? groupId,
+    List<String>? categories,
   }) {
     final dateFormat = DateFormat('yyyy-MM-dd');
 
@@ -31,6 +32,7 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
       if (startDate != null) 'date_start': dateFormat.format(startDate),
       if (endDate != null) 'date_end': dateFormat.format(endDate),
       if (groupId != null) 'group_id': groupId,
+      if (categories != null && categories.isNotEmpty) 'category[]': categories,
     };
 
     return _client
@@ -60,7 +62,7 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
           ApiRoutes.transactions,
           data: {
             'title': title,
-            'amount': amount, // Envia como number/double
+            'amount': amount,
             'type': type.name,
             'transaction_date': DateFormat('yyyy-MM-dd').format(date),
             'category': category,

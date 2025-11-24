@@ -1,4 +1,5 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:sincro/core/constants/transaction_categories.dart';
 import 'package:sincro/core/enums/transaction_type.dart';
 import 'package:sincro/core/models/group_model.dart';
 import 'package:sincro/features/profile/profile_providers.dart';
@@ -23,6 +24,13 @@ class HistoryViewModel extends _$HistoryViewModel {
     final initialState = results[1] as HistoryState;
 
     return initialState.copyWith(availableGroups: groups);
+  }
+
+  List<String> get availableCategories {
+    final type = state.value?.typeFilter;
+    if (type == TransactionType.income) return TransactionCategories.income;
+    if (type == TransactionType.expense) return TransactionCategories.expense;
+    return TransactionCategories.getAll();
   }
 
   Future<void> loadNextPage() async {
@@ -62,19 +70,25 @@ class HistoryViewModel extends _$HistoryViewModel {
     DateTime? startDate,
     DateTime? endDate,
     int? groupId,
-    String? category,
+    List<String>? categories,
   }) async {
     state = const AsyncLoading();
 
     final currentState = state.value ?? const HistoryState();
 
+    List<String>? newCategories = categories ?? currentState.selectedCategories;
+    if (type != null && type != currentState.typeFilter) {
+      newCategories = [];
+    }
+
     final baseState = currentState.copyWith(
-      searchQuery: search,
+      searchQuery: search ?? currentState.searchQuery,
       typeFilter: type,
       startDate: startDate,
       endDate: endDate,
       selectedGroupId: groupId,
-      selectedCategory: category,
+      selectedCategories: newCategories,
+
       page: 1,
       transactions: [],
     );
@@ -118,6 +132,7 @@ class HistoryViewModel extends _$HistoryViewModel {
           startDate: stateCopy.startDate,
           endDate: stateCopy.endDate,
           groupId: stateCopy.selectedGroupId,
+          categories: stateCopy.selectedCategories,
         )
         .run();
 
@@ -141,10 +156,8 @@ class HistoryViewModel extends _$HistoryViewModel {
   }
 
   Future<List<GroupModel>> _loadAvailableGroups() async {
-    // TODO: Futuramente, consumir de um GroupRepository dedicado
     final profileRepository = ref.read(profileRepositoryProvider);
     final result = await profileRepository.getMyGroups().run();
-
     return result.getOrElse((_) => []);
   }
 }

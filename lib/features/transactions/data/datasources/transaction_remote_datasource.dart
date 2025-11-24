@@ -12,6 +12,7 @@ abstract class TransactionRemoteDataSource {
     DateTime? startDate,
     DateTime? endDate,
     int? groupId,
+    List<String>? categories,
   });
 
   TaskEither<AppFailure, TransactionModel> createTransaction({

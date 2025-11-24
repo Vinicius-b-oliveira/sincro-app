@@ -18,7 +18,8 @@ abstract class HistoryState with _$HistoryState {
     DateTime? startDate,
     DateTime? endDate,
     int? selectedGroupId,
-    String? selectedCategory,
+
+    @Default([]) List<String> selectedCategories,
 
     @Default([]) List<GroupModel> availableGroups,
 
