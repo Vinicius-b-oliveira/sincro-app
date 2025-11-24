@@ -1,21 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:intl/intl.dart';
+import 'package:sincro/core/enums/transaction_type.dart';
 
 part 'transaction_model.freezed.dart';
 part 'transaction_model.g.dart';
-
-enum TransactionType {
-  @JsonValue('income')
-  income,
-  @JsonValue('expense')
-  expense;
-
-  String get label => this == TransactionType.income ? 'Receita' : 'Despesa';
-
-  Color get color => this == TransactionType.income
-      ? const Color(0xFF4CAF50)
-      : const Color(0xFFE53935);
-}
 
 @freezed
 abstract class TransactionModel with _$TransactionModel {
@@ -48,7 +36,14 @@ abstract class TransactionModel with _$TransactionModel {
   bool get isExpense => type == TransactionType.expense;
 
   String get formattedAmount {
-    return amount.toStringAsFixed(2);
+    return NumberFormat.currency(
+      locale: 'pt_BR',
+      symbol: 'R\$',
+    ).format(amount);
+  }
+
+  String get formattedDate {
+    return DateFormat('dd/MM/yyyy').format(date);
   }
 }
 
