@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:sincro/core/models/group_model.dart';
 import 'package:sincro/core/session/session_notifier.dart';
 import 'package:sincro/core/session/session_state.dart';
 import 'package:sincro/features/profile/presentation/viewmodels/profile/profile_state.dart';
@@ -11,7 +12,7 @@ class FavoriteGroupBottomSheet extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final groups = useState<List<Map<String, dynamic>>>([]);
+    final groups = useState<List<GroupModel>>([]);
     final isLoadingGroups = useState(true);
 
     final selectedGroupId = useState<int?>(null);
@@ -33,7 +34,7 @@ class FavoriteGroupBottomSheet extends HookConsumerWidget {
               .read(profileViewModelProvider.notifier)
               .getAvailableGroups();
 
-          groups.value = fetchedGroups.cast<Map<String, dynamic>>();
+          groups.value = fetchedGroups;
 
           if (currentFavoriteId != null) {
             selectedGroupId.value = currentFavoriteId;
@@ -127,18 +128,16 @@ class FavoriteGroupBottomSheet extends HookConsumerWidget {
                     itemCount: groups.value.length,
                     itemBuilder: (context, index) {
                       final group = groups.value[index];
-                      final id = group['id'] as int;
-                      final name = group['name'] as String;
-                      final memberCount = group['members_count'] as int? ?? 0;
-                      final isCurrentFavorite = id == currentFavoriteId;
+
+                      final isCurrentFavorite = group.id == currentFavoriteId;
 
                       return _GroupItem(
-                        id: id,
-                        name: name,
-                        memberCount: memberCount,
+                        id: group.id,
+                        name: group.name,
+                        memberCount: group.membersCount,
                         isCurrentFavorite: isCurrentFavorite,
-                        isSelected: selectedGroupId.value == id,
-                        onTap: () => selectedGroupId.value = id,
+                        isSelected: selectedGroupId.value == group.id,
+                        onTap: () => selectedGroupId.value = group.id,
                         colorScheme: colorScheme,
                         textTheme: textTheme,
                       );

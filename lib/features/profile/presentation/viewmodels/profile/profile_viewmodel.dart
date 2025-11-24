@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sincro/core/errors/app_failure.dart';
+import 'package:sincro/core/models/group_model.dart';
 import 'package:sincro/core/session/session_notifier.dart';
 import 'package:sincro/features/auth/auth_providers.dart';
 import 'package:sincro/features/profile/presentation/viewmodels/profile/profile_state.dart';
@@ -76,7 +77,7 @@ class ProfileViewModel extends _$ProfileViewModel {
     );
   }
 
-  Future<List<dynamic>> getAvailableGroups() async {
+  Future<List<GroupModel>> getAvailableGroups() async {
     final repository = ref.read(profileRepositoryProvider);
     final result = await repository.getMyGroups().run();
 
