@@ -69,7 +69,7 @@ class HistoryViewModel extends _$HistoryViewModel {
     TransactionType? type,
     DateTime? startDate,
     DateTime? endDate,
-    int? groupId,
+    List<int>? groupIds,
     List<String>? categories,
   }) async {
     state = const AsyncLoading();
@@ -84,11 +84,10 @@ class HistoryViewModel extends _$HistoryViewModel {
     final baseState = currentState.copyWith(
       searchQuery: search ?? currentState.searchQuery,
       typeFilter: type,
-      startDate: startDate,
-      endDate: endDate,
-      selectedGroupId: groupId,
+      startDate: startDate ?? currentState.startDate,
+      endDate: endDate ?? currentState.endDate,
+      selectedGroupIds: groupIds ?? currentState.selectedGroupIds,
       selectedCategories: newCategories,
-
       page: 1,
       transactions: [],
     );
@@ -117,6 +116,10 @@ class HistoryViewModel extends _$HistoryViewModel {
     }
   }
 
+  Future<void> clearDateFilter() async {
+    await updateFilters(startDate: null, endDate: null);
+  }
+
   Future<HistoryState> _fetchTransactions({
     required int page,
     required HistoryState stateCopy,
@@ -131,7 +134,7 @@ class HistoryViewModel extends _$HistoryViewModel {
           type: stateCopy.typeFilter,
           startDate: stateCopy.startDate,
           endDate: stateCopy.endDate,
-          groupId: stateCopy.selectedGroupId,
+          groupIds: stateCopy.selectedGroupIds,
           categories: stateCopy.selectedCategories,
         )
         .run();

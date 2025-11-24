@@ -11,7 +11,7 @@ abstract class TransactionRemoteDataSource {
     TransactionType? type,
     DateTime? startDate,
     DateTime? endDate,
-    int? groupId,
+    List<int>? groupIds,
     List<String>? categories,
   });
 

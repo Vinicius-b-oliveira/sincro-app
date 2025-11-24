@@ -20,7 +20,7 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
     TransactionType? type,
     DateTime? startDate,
     DateTime? endDate,
-    int? groupId,
+    List<int>? groupIds,
     List<String>? categories,
   }) {
     final dateFormat = DateFormat('yyyy-MM-dd');
@@ -31,7 +31,7 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
       if (type != null) 'type': type.name,
       if (startDate != null) 'date_start': dateFormat.format(startDate),
       if (endDate != null) 'date_end': dateFormat.format(endDate),
-      if (groupId != null) 'group_id': groupId,
+      if (groupIds != null && groupIds.isNotEmpty) 'group_id[]': groupIds,
       if (categories != null && categories.isNotEmpty) 'category[]': categories,
     };
 

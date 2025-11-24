@@ -17,8 +17,8 @@ abstract class HistoryState with _$HistoryState {
     TransactionType? typeFilter,
     DateTime? startDate,
     DateTime? endDate,
-    int? selectedGroupId,
 
+    @Default([]) List<int> selectedGroupIds,
     @Default([]) List<String> selectedCategories,
 
     @Default([]) List<GroupModel> availableGroups,

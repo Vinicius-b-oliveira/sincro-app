@@ -18,7 +18,7 @@ class TransactionRepositoryImpl implements TransactionRepository {
     TransactionType? type,
     DateTime? startDate,
     DateTime? endDate,
-    int? groupId,
+    List<int>? groupIds,
     List<String>? categories,
   }) {
     return _dataSource.getTransactions(
@@ -27,7 +27,7 @@ class TransactionRepositoryImpl implements TransactionRepository {
       type: type,
       startDate: startDate,
       endDate: endDate,
-      groupId: groupId,
+      groupIds: groupIds,
       categories: categories,
     );
   }
