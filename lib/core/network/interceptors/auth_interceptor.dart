@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:sincro/core/constants/api_routes.dart';
 import 'package:sincro/core/models/token_model.dart';
 import 'package:sincro/core/models/user_model.dart';
+import 'package:sincro/core/session/auth_event_notifier.dart';
 import 'package:sincro/core/storage/hive_service.dart';
 import 'package:sincro/core/storage/secure_storage_service.dart';
 import 'package:sincro/core/utils/logger.dart';
@@ -10,11 +11,13 @@ class AuthInterceptor extends Interceptor {
   final SecureStorageService _storage;
   final HiveService _hiveService;
   final Dio _authDio;
+  final AuthEventNotifier _eventNotifier;
 
   AuthInterceptor(
     this._storage,
     this._hiveService,
     this._authDio,
+    this._eventNotifier,
   );
 
   @override
@@ -74,8 +77,11 @@ class AuthInterceptor extends Interceptor {
         }
       } else {
         log.e('❌ Falha no refresh token. Sessão expirada.');
+
         await _storage.deleteTokens().run();
         await _hiveService.deleteUser().run();
+
+        _eventNotifier.emit(AuthEvent.forceLogout);
       }
     }
     super.onError(err, handler);
@@ -111,9 +117,7 @@ class AuthInterceptor extends Interceptor {
         }
         return false;
       } catch (e) {
-        log.e('Erro no refresh: $e');
-        await _storage.deleteTokens().run();
-        await _hiveService.deleteUser().run();
+        log.e('⛔ Erro no refresh: $e');
         return false;
       }
     });

@@ -5,6 +5,7 @@ import 'package:sincro/core/network/dio_client.dart';
 import 'package:sincro/core/network/interceptors/auth_interceptor.dart';
 import 'package:sincro/core/network/interceptors/laravel_response_interceptor.dart';
 import 'package:sincro/core/network/interceptors/logging_interceptor.dart';
+import 'package:sincro/core/session/auth_event_notifier.dart';
 import 'package:sincro/core/storage/storage_providers.dart';
 
 part 'network_providers.g.dart';
@@ -29,6 +30,7 @@ AuthInterceptor authInterceptor(Ref ref) {
     ref.watch(secureStorageServiceProvider),
     ref.watch(hiveServiceProvider),
     ref.watch(authDioProvider),
+    ref.watch(authEventProvider.notifier),
   );
 }
 
