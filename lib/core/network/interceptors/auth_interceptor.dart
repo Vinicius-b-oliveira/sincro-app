@@ -33,7 +33,7 @@ class AuthInterceptor extends Interceptor {
 
     result.fold(
       (failure) {
-        log.e('Falha ao ler tokens do storage: ${failure.message}');
+        // Log discreto para não poluir, pois vai tentar sem token e a API que decida
         handler.next(options);
       },
       (tokens) {
@@ -72,11 +72,10 @@ class AuthInterceptor extends Interceptor {
           final response = await _authDio.fetch(err.requestOptions);
           return handler.resolve(response);
         } catch (e) {
-          log.e('❌ Falha ao retentar requisição: $e');
           return handler.next(err);
         }
       } else {
-        log.e('❌ Falha no refresh token. Sessão expirada.');
+        log.w('🔒 Sessão expirada (Refresh falhou). Iniciando logout forçado.');
 
         await _storage.deleteTokens().run();
         await _hiveService.deleteUser().run();
@@ -110,14 +109,20 @@ class AuthInterceptor extends Interceptor {
           if (data['user'] != null) {
             final user = UserModel.fromJson(data['user']);
             await _hiveService.saveUser(user).run();
-            log.i('👤 Cache de usuário atualizado via Refresh Token');
           }
 
           return true;
         }
         return false;
+      } on DioException catch (e) {
+        if (e.response?.statusCode == 401) {
+          log.w('⚠️ Refresh Token rejeitado pela API (401).');
+        } else {
+          log.e('⛔ Erro de conexão no refresh: ${e.message}');
+        }
+        return false;
       } catch (e) {
-        log.e('⛔ Erro no refresh: $e');
+        log.e('⛔ Erro inesperado no refresh: $e');
         return false;
       }
     });
