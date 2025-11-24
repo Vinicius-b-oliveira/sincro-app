@@ -96,20 +96,18 @@ class HistoryFilterPanel extends ConsumerWidget {
               _FilterChip(
                 label: 'Todos',
                 isSelected: historyState.typeFilter == null,
-                onTap: () => viewModel.updateFilters(type: null),
+                onTap: () => viewModel.setTypeFilter(null),
               ),
               _FilterChip(
                 label: 'Receitas',
                 isSelected: historyState.typeFilter == TransactionType.income,
-                onTap: () =>
-                    viewModel.updateFilters(type: TransactionType.income),
+                onTap: () => viewModel.setTypeFilter(TransactionType.income),
                 color: const Color(0xFF4CAF50),
               ),
               _FilterChip(
                 label: 'Despesas',
                 isSelected: historyState.typeFilter == TransactionType.expense,
-                onTap: () =>
-                    viewModel.updateFilters(type: TransactionType.expense),
+                onTap: () => viewModel.setTypeFilter(TransactionType.expense),
                 color: const Color(0xFFE53935),
               ),
             ],

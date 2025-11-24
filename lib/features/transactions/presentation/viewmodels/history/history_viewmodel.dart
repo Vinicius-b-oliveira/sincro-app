@@ -75,7 +75,6 @@ class HistoryViewModel extends _$HistoryViewModel {
     final currentState = state.value ?? const HistoryState();
 
     List<String> newCategories = categories ?? currentState.selectedCategories;
-
     if (type != null && type != currentState.typeFilter) {
       newCategories = [];
     }
@@ -87,9 +86,7 @@ class HistoryViewModel extends _$HistoryViewModel {
       startDate: startDate ?? currentState.startDate,
       endDate: endDate ?? currentState.endDate,
       selectedGroupIds: groupIds ?? currentState.selectedGroupIds,
-
       selectedCategories: newCategories,
-
       page: 1,
     );
 
@@ -118,6 +115,7 @@ class HistoryViewModel extends _$HistoryViewModel {
 
   Future<void> clearDateFilter() async {
     final currentState = state.value ?? const HistoryState();
+
     final baseState = currentState.copyWith(
       isRefreshingFilters: true,
       startDate: null,
@@ -131,6 +129,7 @@ class HistoryViewModel extends _$HistoryViewModel {
 
   Future<void> clearAllFilters() async {
     final currentState = state.value ?? const HistoryState();
+
     final baseState = currentState.copyWith(
       isRefreshingFilters: true,
       searchQuery: '',
