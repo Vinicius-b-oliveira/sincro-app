@@ -10,8 +10,24 @@ class ApiConfig {
   static const Duration connectTimeout = Duration(seconds: 15);
   static const Duration receiveTimeout = Duration(seconds: 15);
 
+  static bool _enableHttpLogs = false;
+  static bool get enableHttpLogs => _enableHttpLogs;
+
+  static bool _enableDetailedLogs = false;
+  static bool get enableDetailedLogs => _enableDetailedLogs;
+
   static Future<void> initialize() async {
     await dotenv.load(fileName: '.env');
+
+    _enableHttpLogs =
+        dotenv.get(
+          'ENABLE_HTTP_LOGS',
+          fallback: kDebugMode ? 'true' : 'false',
+        ) ==
+        'true';
+
+    _enableDetailedLogs =
+        dotenv.get('ENABLE_HTTP_DETAILED_LOGS', fallback: 'false') == 'true';
 
     if (kReleaseMode) {
       _baseUrl = dotenv.get('API_BASE_URL');

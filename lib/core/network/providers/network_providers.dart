@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sincro/core/config/api_config.dart';
 import 'package:sincro/core/network/dio_client.dart';
@@ -12,7 +11,9 @@ part 'network_providers.g.dart';
 
 @Riverpod(keepAlive: true)
 LoggingInterceptor loggingInterceptor(Ref ref) {
-  return LoggingInterceptor();
+  return LoggingInterceptor(
+    logDetailed: ApiConfig.enableDetailedLogs,
+  );
 }
 
 @Riverpod(keepAlive: true)
@@ -47,7 +48,7 @@ Dio authDio(Ref ref) {
 
   dio.interceptors.add(ref.watch(laravelResponseInterceptorProvider));
 
-  if (kDebugMode) {
+  if (ApiConfig.enableHttpLogs) {
     dio.interceptors.add(ref.watch(loggingInterceptorProvider));
   }
 
@@ -71,7 +72,7 @@ Dio dio(Ref ref) {
   dio.interceptors.add(ref.watch(authInterceptorProvider));
   dio.interceptors.add(ref.watch(laravelResponseInterceptorProvider));
 
-  if (kDebugMode) {
+  if (ApiConfig.enableHttpLogs) {
     dio.interceptors.add(ref.watch(loggingInterceptorProvider));
   }
 
