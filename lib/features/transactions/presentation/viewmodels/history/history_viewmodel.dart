@@ -72,52 +72,96 @@ class HistoryViewModel extends _$HistoryViewModel {
     List<int>? groupIds,
     List<String>? categories,
   }) async {
-    state = const AsyncLoading();
-
     final currentState = state.value ?? const HistoryState();
 
-    List<String>? newCategories = categories ?? currentState.selectedCategories;
+    List<String> newCategories = categories ?? currentState.selectedCategories;
+
     if (type != null && type != currentState.typeFilter) {
       newCategories = [];
     }
 
     final baseState = currentState.copyWith(
+      isRefreshingFilters: true,
       searchQuery: search ?? currentState.searchQuery,
-      typeFilter: type,
+      typeFilter: type ?? currentState.typeFilter,
       startDate: startDate ?? currentState.startDate,
       endDate: endDate ?? currentState.endDate,
       selectedGroupIds: groupIds ?? currentState.selectedGroupIds,
+
       selectedCategories: newCategories,
+
       page: 1,
-      transactions: [],
     );
+
+    state = AsyncData(baseState);
 
     try {
       final newState = await _fetchTransactions(page: 1, stateCopy: baseState);
-      state = AsyncData(newState);
+      state = AsyncData(newState.copyWith(isRefreshingFilters: false));
     } catch (error, stack) {
       state = AsyncError(error, stack);
     }
+  }
+
+  Future<void> setTypeFilter(TransactionType? type) async {
+    final currentState = state.value ?? const HistoryState();
+    final baseState = currentState.copyWith(
+      isRefreshingFilters: true,
+      typeFilter: type,
+      selectedCategories: [],
+      page: 1,
+    );
+
+    state = AsyncData(baseState);
+    _executeRefresh(baseState);
+  }
+
+  Future<void> clearDateFilter() async {
+    final currentState = state.value ?? const HistoryState();
+    final baseState = currentState.copyWith(
+      isRefreshingFilters: true,
+      startDate: null,
+      endDate: null,
+      page: 1,
+    );
+
+    state = AsyncData(baseState);
+    _executeRefresh(baseState);
+  }
+
+  Future<void> clearAllFilters() async {
+    final currentState = state.value ?? const HistoryState();
+    final baseState = currentState.copyWith(
+      isRefreshingFilters: true,
+      searchQuery: '',
+      typeFilter: null,
+      startDate: null,
+      endDate: null,
+      selectedGroupIds: [],
+      selectedCategories: [],
+      page: 1,
+    );
+
+    state = AsyncData(baseState);
+    _executeRefresh(baseState);
   }
 
   Future<void> refresh() async {
     final currentState = state.value;
     if (currentState == null) return;
 
-    state = const AsyncLoading();
+    final baseState = currentState.copyWith(isRefreshingFilters: true, page: 1);
+    state = AsyncData(baseState);
+    _executeRefresh(baseState);
+  }
+
+  Future<void> _executeRefresh(HistoryState baseState) async {
     try {
-      final newState = await _fetchTransactions(
-        page: 1,
-        stateCopy: currentState.copyWith(page: 1, transactions: []),
-      );
-      state = AsyncData(newState);
+      final newState = await _fetchTransactions(page: 1, stateCopy: baseState);
+      state = AsyncData(newState.copyWith(isRefreshingFilters: false));
     } catch (error, stack) {
       state = AsyncError(error, stack);
     }
-  }
-
-  Future<void> clearDateFilter() async {
-    await updateFilters(startDate: null, endDate: null);
   }
 
   Future<HistoryState> _fetchTransactions({

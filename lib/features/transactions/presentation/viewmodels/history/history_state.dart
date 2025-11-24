@@ -13,6 +13,8 @@ abstract class HistoryState with _$HistoryState {
     @Default(true) bool hasMore,
     @Default(false) bool isLoadingMore,
 
+    @Default(false) bool isRefreshingFilters,
+
     String? searchQuery,
     TransactionType? typeFilter,
     DateTime? startDate,

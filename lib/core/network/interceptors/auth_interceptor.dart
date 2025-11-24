@@ -33,7 +33,6 @@ class AuthInterceptor extends Interceptor {
 
     result.fold(
       (failure) {
-        // Log discreto para não poluir, pois vai tentar sem token e a API que decida
         handler.next(options);
       },
       (tokens) {

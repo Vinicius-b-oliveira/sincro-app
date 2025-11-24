@@ -1,6 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sincro/core/models/user_model.dart';
-import 'package:sincro/core/session/auth_event_notifier.dart'; // <--- NOVO IMPORT
+import 'package:sincro/core/session/auth_event_notifier.dart';
 import 'package:sincro/core/session/session_state.dart';
 import 'package:sincro/core/storage/storage_providers.dart';
 import 'package:sincro/core/utils/logger.dart';

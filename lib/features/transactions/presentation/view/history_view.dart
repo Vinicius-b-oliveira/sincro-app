@@ -3,6 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:intl/intl.dart';
+import 'package:sincro/core/enums/transaction_type.dart';
+import 'package:sincro/core/models/group_model.dart';
 import 'package:sincro/features/transactions/presentation/viewmodels/history/history_viewmodel.dart';
 import 'package:sincro/features/transactions/presentation/widgets/history_filter_panel.dart';
 import 'package:sincro/features/transactions/presentation/widgets/transaction_list_item.dart';
@@ -33,7 +36,6 @@ class HistoryView extends HookConsumerWidget {
       return () => scrollController.removeListener(listener);
     }, [scrollController]);
 
-    // Listener de Busca
     useEffect(() {
       void listener() {
         debounceTimer.value?.cancel();
@@ -106,6 +108,16 @@ class HistoryView extends HookConsumerWidget {
                           ),
                         ),
                       ),
+                      const SizedBox(width: 8),
+
+                      if (_hasActiveFilters(historyStateAsync.value))
+                        TextButton(
+                          onPressed: () {
+                            viewModel.clearAllFilters();
+                            searchController.clear();
+                          },
+                          child: const Text('Limpar filtros'),
+                        ),
                     ],
                   ),
 
@@ -119,7 +131,26 @@ class HistoryView extends HookConsumerWidget {
                           )
                         : const SizedBox.shrink(),
                   ),
+
+                  if (historyStateAsync.value != null)
+                    _buildActiveFiltersList(
+                      context,
+                      historyStateAsync.value!,
+                      viewModel,
+                      colorScheme,
+                    ),
+
                   const SizedBox(height: 16),
+
+                  if (historyStateAsync.value?.isRefreshingFilters ?? false)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: LinearProgressIndicator(
+                        backgroundColor: colorScheme.surfaceContainerHighest,
+                        color: colorScheme.primary,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
                 ]),
               ),
             ),
@@ -149,7 +180,7 @@ class HistoryView extends HookConsumerWidget {
                 ),
               ),
               data: (state) {
-                if (state.transactions.isEmpty) {
+                if (state.transactions.isEmpty && !state.isRefreshingFilters) {
                   return SliverFillRemaining(
                     hasScrollBody: false,
                     child: Center(
@@ -203,7 +234,10 @@ class HistoryView extends HookConsumerWidget {
                         }
 
                         final transaction = state.transactions[index];
-                        return TransactionListItem(transaction: transaction);
+                        return Opacity(
+                          opacity: state.isRefreshingFilters ? 0.5 : 1.0,
+                          child: TransactionListItem(transaction: transaction),
+                        );
                       },
                       childCount:
                           state.transactions.length + (state.hasMore ? 1 : 0),
@@ -215,6 +249,113 @@ class HistoryView extends HookConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+
+  bool _hasActiveFilters(dynamic state) {
+    if (state == null) return false;
+    return state.typeFilter != null ||
+        state.startDate != null ||
+        state.selectedGroupIds.isNotEmpty ||
+        state.selectedCategories.isNotEmpty;
+  }
+
+  Widget _buildActiveFiltersList(
+    BuildContext context,
+    dynamic state,
+    dynamic viewModel,
+    ColorScheme colorScheme,
+  ) {
+    final chips = <Widget>[];
+
+    if (state.typeFilter != null) {
+      chips.add(
+        _buildActiveChip(
+          label: state.typeFilter == TransactionType.income
+              ? 'Receitas'
+              : 'Despesas',
+          onDeleted: () => viewModel.setTypeFilter(null),
+          colorScheme: colorScheme,
+        ),
+      );
+    }
+
+    if (state.startDate != null && state.endDate != null) {
+      final dateStr =
+          '${DateFormat('dd/MM').format(state.startDate!)} - ${DateFormat('dd/MM').format(state.endDate!)}';
+      chips.add(
+        _buildActiveChip(
+          label: dateStr,
+          onDeleted: () => viewModel.clearDateFilter(),
+          colorScheme: colorScheme,
+        ),
+      );
+    }
+
+    for (final groupId in state.selectedGroupIds) {
+      final group = state.availableGroups.firstWhere(
+        (g) => g.id == groupId,
+        orElse: () => GroupModel(
+          id: 0,
+          name: 'Grupo $groupId',
+          createdAt: DateTime.now(),
+        ),
+      );
+
+      chips.add(
+        _buildActiveChip(
+          label: group.name,
+          onDeleted: () {
+            final newList = List<int>.from(state.selectedGroupIds)
+              ..remove(groupId);
+            viewModel.updateFilters(groupIds: newList);
+          },
+          colorScheme: colorScheme,
+        ),
+      );
+    }
+
+    for (final category in state.selectedCategories) {
+      chips.add(
+        _buildActiveChip(
+          label: category,
+          onDeleted: () {
+            final newList = List<String>.from(state.selectedCategories)
+              ..remove(category);
+            viewModel.updateFilters(categories: newList);
+          },
+          colorScheme: colorScheme,
+        ),
+      );
+    }
+
+    if (chips.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: chips,
+      ),
+    );
+  }
+
+  Widget _buildActiveChip({
+    required String label,
+    required VoidCallback onDeleted,
+    required ColorScheme colorScheme,
+  }) {
+    return Chip(
+      label: Text(label, style: const TextStyle(fontSize: 12)),
+      deleteIcon: const Icon(Icons.close, size: 16),
+      onDeleted: onDeleted,
+      backgroundColor: colorScheme.primaryContainer,
+      labelStyle: TextStyle(color: colorScheme.onPrimaryContainer),
+      deleteIconColor: colorScheme.onPrimaryContainer,
+      side: BorderSide.none,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
     );
   }
 }
