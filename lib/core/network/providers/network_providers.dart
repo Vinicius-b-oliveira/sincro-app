@@ -26,6 +26,7 @@ LaravelResponseInterceptor laravelResponseInterceptor(
 AuthInterceptor authInterceptor(Ref ref) {
   return AuthInterceptor(
     ref.watch(secureStorageServiceProvider),
+    ref.watch(hiveServiceProvider),
     ref.watch(authDioProvider),
   );
 }

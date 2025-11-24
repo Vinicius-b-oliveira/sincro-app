@@ -1,14 +1,21 @@
 import 'package:dio/dio.dart';
 import 'package:sincro/core/constants/api_routes.dart';
+import 'package:sincro/core/models/token_model.dart';
+import 'package:sincro/core/models/user_model.dart';
+import 'package:sincro/core/storage/hive_service.dart';
 import 'package:sincro/core/storage/secure_storage_service.dart';
 import 'package:sincro/core/utils/logger.dart';
-import 'package:sincro/core/models/token_model.dart';
 
 class AuthInterceptor extends Interceptor {
   final SecureStorageService _storage;
+  final HiveService _hiveService;
   final Dio _authDio;
 
-  AuthInterceptor(this._storage, this._authDio);
+  AuthInterceptor(
+    this._storage,
+    this._hiveService,
+    this._authDio,
+  );
 
   @override
   Future<void> onRequest(
@@ -51,7 +58,6 @@ class AuthInterceptor extends Interceptor {
         log.i('🔄 Token renovado! Retentando requisição original...');
 
         final tokensResult = await _storage.getTokens().run();
-
         final tokens = tokensResult.getOrElse((_) => null);
 
         if (tokens != null) {
@@ -69,6 +75,7 @@ class AuthInterceptor extends Interceptor {
       } else {
         log.e('❌ Falha no refresh token. Sessão expirada.');
         await _storage.deleteTokens().run();
+        await _hiveService.deleteUser().run();
       }
     }
     super.onError(err, handler);
@@ -88,16 +95,25 @@ class AuthInterceptor extends Interceptor {
 
         if (response.statusCode == 200 && response.data != null) {
           final data = response.data;
-          final tokenData = data['tokens'] ?? data;
-          final newTokens = TokenModel.fromJson(tokenData);
 
-          await _storage.saveTokens(newTokens).run();
+          if (data['tokens'] != null) {
+            final newTokens = TokenModel.fromJson(data['tokens']);
+            await _storage.saveTokens(newTokens).run();
+          }
+
+          if (data['user'] != null) {
+            final user = UserModel.fromJson(data['user']);
+            await _hiveService.saveUser(user).run();
+            log.i('👤 Cache de usuário atualizado via Refresh Token');
+          }
+
           return true;
         }
         return false;
       } catch (e) {
         log.e('Erro no refresh: $e');
         await _storage.deleteTokens().run();
+        await _hiveService.deleteUser().run();
         return false;
       }
     });
