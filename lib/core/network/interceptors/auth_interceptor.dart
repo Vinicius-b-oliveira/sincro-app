@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:sincro/core/constants/api_routes.dart';
 import 'package:sincro/core/models/token_model.dart';
@@ -12,6 +14,9 @@ class AuthInterceptor extends Interceptor {
   final HiveService _hiveService;
   final Dio _authDio;
   final AuthEventNotifier _eventNotifier;
+
+  bool _isRefreshing = false;
+  Completer<bool>? _refreshCompleter;
 
   AuthInterceptor(
     this._storage,
@@ -32,9 +37,7 @@ class AuthInterceptor extends Interceptor {
     final result = await _storage.getTokens().run();
 
     result.fold(
-      (failure) {
-        handler.next(options);
-      },
+      (failure) => handler.next(options),
       (tokens) {
         if (tokens != null) {
           options.headers['Authorization'] = 'Bearer ${tokens.accessToken}';
@@ -52,37 +55,71 @@ class AuthInterceptor extends Interceptor {
     if (err.response?.statusCode == 401 &&
         !err.requestOptions.path.contains(ApiRoutes.login) &&
         !err.requestOptions.path.contains(ApiRoutes.refreshToken)) {
-      log.w('⚠️ 401 Detectado. Tentando refresh token...');
+      if (_isRefreshing) {
+        log.i(
+          '⏳ 401 Concorrente detectado. Aguardando renovação em andamento...',
+        );
+
+        final success = await _refreshCompleter!.future;
+
+        if (success) {
+          log.i(
+            '✅ Token renovado! Retentando requisição fila...',
+          );
+          await _retryRequest(err, handler);
+        } else {
+          log.w('❌ Renovação falhou. Rejeitando requisição da fila.');
+          handler.next(err);
+        }
+        return;
+      }
+
+      _isRefreshing = true;
+      _refreshCompleter = Completer<bool>();
+
+      log.w('⚠️ 401 Detectado. Iniciando refresh token...');
 
       final refreshResult = await _refreshToken();
 
+      _isRefreshing = false;
+      _refreshCompleter?.complete(refreshResult);
+      _refreshCompleter = null;
+
       if (refreshResult) {
-        log.i('🔄 Token renovado! Retentando requisição original...');
-
-        final tokensResult = await _storage.getTokens().run();
-        final tokens = tokensResult.getOrElse((_) => null);
-
-        if (tokens != null) {
-          err.requestOptions.headers['Authorization'] =
-              'Bearer ${tokens.accessToken}';
-        }
-
-        try {
-          final response = await _authDio.fetch(err.requestOptions);
-          return handler.resolve(response);
-        } catch (e) {
-          return handler.next(err);
-        }
+        log.i('🔄 Token renovado (Master)! Retentando requisição original...');
+        await _retryRequest(err, handler);
       } else {
-        log.w('🔒 Sessão expirada (Refresh falhou). Iniciando logout forçado.');
+        log.w('🔒 Sessão expirada (Refresh Master falhou). Iniciando logout.');
 
         await _storage.deleteTokens().run();
         await _hiveService.deleteUser().run();
-
         _eventNotifier.emit(AuthEvent.forceLogout);
+
+        handler.next(err);
       }
+      return;
     }
     super.onError(err, handler);
+  }
+
+  Future<void> _retryRequest(
+    DioException err,
+    ErrorInterceptorHandler handler,
+  ) async {
+    final tokensResult = await _storage.getTokens().run();
+    final tokens = tokensResult.getOrElse((_) => null);
+
+    if (tokens != null) {
+      err.requestOptions.headers['Authorization'] =
+          'Bearer ${tokens.accessToken}';
+    }
+
+    try {
+      final response = await _authDio.fetch(err.requestOptions);
+      return handler.resolve(response);
+    } catch (e) {
+      return handler.next(err);
+    }
   }
 
   Future<bool> _refreshToken() async {
