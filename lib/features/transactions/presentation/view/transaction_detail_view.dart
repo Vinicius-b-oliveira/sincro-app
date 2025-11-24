@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:sincro/features/transactions/models/transaction.dart';
+import 'package:intl/intl.dart';
+import 'package:sincro/core/enums/transaction_type.dart';
+import 'package:sincro/core/models/transaction_model.dart';
+import 'package:sincro/core/session/session_notifier.dart';
+import 'package:sincro/core/session/session_state.dart';
 
 class TransactionDetailView extends HookConsumerWidget {
-  final Transaction transaction;
+  final TransactionModel transaction;
 
   const TransactionDetailView({
     required this.transaction,
@@ -13,19 +17,31 @@ class TransactionDetailView extends HookConsumerWidget {
   });
 
   String _formatDateTime(DateTime dateTime) {
-    return '${dateTime.day.toString().padLeft(2, '0')}/${dateTime.month.toString().padLeft(2, '0')}/${dateTime.year} ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+    return DateFormat('dd/MM/yyyy HH:mm').format(dateTime);
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final sessionState = ref.watch(sessionProvider);
+    final currentUser = sessionState.whenOrNull(authenticated: (u) => u);
+    final isOwnedByUser =
+        currentUser != null && transaction.isOwnedBy(currentUser.id);
+
     final isEditing = useState(false);
+
     final titleController = useTextEditingController(text: transaction.title);
+
     final descriptionController = useTextEditingController(
-      text: transaction.description,
+      text: transaction.description ?? '',
     );
-    final amountController = useTextEditingController(text: transaction.amount);
-    final selectedType = useState(transaction.type);
-    final selectedDate = useState(transaction.transactionDate);
+
+    final amountController = useTextEditingController(
+      text: transaction.amount.toStringAsFixed(2),
+    );
+
+    final selectedType = useState<TransactionType>(transaction.type);
+    final selectedDate = useState(transaction.date);
+
     final formKey = useMemoized(() => GlobalKey<FormState>());
     final isLoading = useState(false);
 
@@ -44,7 +60,7 @@ class TransactionDetailView extends HookConsumerWidget {
         backgroundColor: colorScheme.surface,
         foregroundColor: colorScheme.onSurface,
         elevation: 0,
-        actions: transaction.isOwnedByUser
+        actions: isOwnedByUser
             ? [
                 IconButton(
                   onPressed: isLoading.value
@@ -54,11 +70,6 @@ class TransactionDetailView extends HookConsumerWidget {
                             _saveTransaction(
                               context,
                               formKey,
-                              titleController.text,
-                              descriptionController.text,
-                              amountController.text,
-                              selectedType.value,
-                              selectedDate.value,
                               isLoading,
                               isEditing,
                             );
@@ -78,10 +89,11 @@ class TransactionDetailView extends HookConsumerWidget {
                             isEditing.value = false;
                             titleController.text = transaction.title;
                             descriptionController.text =
-                                transaction.description;
-                            amountController.text = transaction.amount;
+                                transaction.description ?? '';
+                            amountController.text = transaction.amount
+                                .toStringAsFixed(2);
                             selectedType.value = transaction.type;
-                            selectedDate.value = transaction.transactionDate;
+                            selectedDate.value = transaction.date;
                           },
                     icon: const Icon(Icons.close),
                   ),
@@ -100,14 +112,14 @@ class TransactionDetailView extends HookConsumerWidget {
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     color:
-                        (selectedType.value == 'income'
+                        (selectedType.value == TransactionType.income
                                 ? Colors.green
                                 : colorScheme.error)
                             .withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color:
-                          (selectedType.value == 'income'
+                          (selectedType.value == TransactionType.income
                                   ? Colors.green
                                   : colorScheme.error)
                               .withValues(alpha: 0.3),
@@ -119,22 +131,21 @@ class TransactionDetailView extends HookConsumerWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
-                            selectedType.value == 'income'
+                            selectedType.value == TransactionType.income
                                 ? Icons.trending_up
                                 : Icons.trending_down,
-                            color: selectedType.value == 'income'
+                            color: selectedType.value == TransactionType.income
                                 ? Colors.green
                                 : colorScheme.error,
                             size: 32,
                           ),
                           const SizedBox(width: 12),
                           Text(
-                            selectedType.value == 'income'
-                                ? 'Receita'
-                                : 'Despesa',
+                            selectedType.value.label,
                             style: textTheme.titleLarge?.copyWith(
                               fontWeight: FontWeight.bold,
-                              color: selectedType.value == 'income'
+                              color:
+                                  selectedType.value == TransactionType.income
                                   ? Colors.green
                                   : colorScheme.error,
                             ),
@@ -154,7 +165,7 @@ class TransactionDetailView extends HookConsumerWidget {
                 ),
                 const SizedBox(height: 24),
 
-                if (isEditing.value && transaction.isOwnedByUser)
+                if (isEditing.value && isOwnedByUser)
                   TextFormField(
                     controller: titleController,
                     decoration: InputDecoration(
@@ -167,12 +178,10 @@ class TransactionDetailView extends HookConsumerWidget {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Por favor, digite um título';
-                      }
-                      return null;
-                    },
+                    validator: (value) =>
+                        (value == null || value.trim().isEmpty)
+                        ? 'Por favor, digite um título'
+                        : null,
                   )
                 else
                   _buildInfoCard(
@@ -185,7 +194,7 @@ class TransactionDetailView extends HookConsumerWidget {
                   ),
                 const SizedBox(height: 16),
 
-                if (isEditing.value && transaction.isOwnedByUser)
+                if (isEditing.value && isOwnedByUser)
                   TextFormField(
                     controller: descriptionController,
                     maxLines: 3,
@@ -213,10 +222,10 @@ class TransactionDetailView extends HookConsumerWidget {
                   ),
                 const SizedBox(height: 16),
 
-                if (isEditing.value && transaction.isOwnedByUser)
+                if (isEditing.value && isOwnedByUser)
                   TextFormField(
                     controller: amountController,
-                    keyboardType: TextInputType.numberWithOptions(
+                    keyboardType: const TextInputType.numberWithOptions(
                       decimal: true,
                     ),
                     decoration: InputDecoration(
@@ -231,10 +240,10 @@ class TransactionDetailView extends HookConsumerWidget {
                     ),
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
-                        return 'Por favor, digite um valor';
+                        return 'Digite um valor';
                       }
-                      if (double.tryParse(value) == null) {
-                        return 'Por favor, digite um valor válido';
+                      if (double.tryParse(value.replaceAll(',', '.')) == null) {
+                        return 'Valor inválido';
                       }
                       return null;
                     },
@@ -250,7 +259,7 @@ class TransactionDetailView extends HookConsumerWidget {
                   ),
                 const SizedBox(height: 16),
 
-                if (isEditing.value && transaction.isOwnedByUser)
+                if (isEditing.value && isOwnedByUser)
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -264,108 +273,20 @@ class TransactionDetailView extends HookConsumerWidget {
                       const SizedBox(height: 8),
                       Row(
                         children: [
-                          Expanded(
-                            child: InkWell(
-                              onTap: () => selectedType.value = 'income',
-                              child: Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: selectedType.value == 'income'
-                                      ? colorScheme.primary.withValues(
-                                          alpha: 0.1,
-                                        )
-                                      : colorScheme.surfaceContainerHighest
-                                            .withValues(alpha: 0.3),
-                                  border: Border.all(
-                                    color: selectedType.value == 'income'
-                                        ? colorScheme.primary
-                                        : colorScheme.outline,
-                                    width: selectedType.value == 'income'
-                                        ? 2
-                                        : 1,
-                                  ),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      selectedType.value == 'income'
-                                          ? Icons.radio_button_checked
-                                          : Icons.radio_button_unchecked,
-                                      color: selectedType.value == 'income'
-                                          ? colorScheme.primary
-                                          : colorScheme.onSurfaceVariant,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'Receita',
-                                      style: textTheme.bodyMedium?.copyWith(
-                                        fontWeight:
-                                            selectedType.value == 'income'
-                                            ? FontWeight.bold
-                                            : FontWeight.normal,
-                                        color: selectedType.value == 'income'
-                                            ? colorScheme.primary
-                                            : colorScheme.onSurface,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
+                          _buildTypeSelector(
+                            context,
+                            TransactionType.income,
+                            selectedType,
+                            colorScheme,
+                            textTheme,
                           ),
                           const SizedBox(width: 12),
-                          Expanded(
-                            child: InkWell(
-                              onTap: () => selectedType.value = 'expense',
-                              child: Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: selectedType.value == 'expense'
-                                      ? colorScheme.primary.withValues(
-                                          alpha: 0.1,
-                                        )
-                                      : colorScheme.surfaceContainerHighest
-                                            .withValues(alpha: 0.3),
-                                  border: Border.all(
-                                    color: selectedType.value == 'expense'
-                                        ? colorScheme.primary
-                                        : colorScheme.outline,
-                                    width: selectedType.value == 'expense'
-                                        ? 2
-                                        : 1,
-                                  ),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      selectedType.value == 'expense'
-                                          ? Icons.radio_button_checked
-                                          : Icons.radio_button_unchecked,
-                                      color: selectedType.value == 'expense'
-                                          ? colorScheme.primary
-                                          : colorScheme.onSurfaceVariant,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'Despesa',
-                                      style: textTheme.bodyMedium?.copyWith(
-                                        fontWeight:
-                                            selectedType.value == 'expense'
-                                            ? FontWeight.bold
-                                            : FontWeight.normal,
-                                        color: selectedType.value == 'expense'
-                                            ? colorScheme.primary
-                                            : colorScheme.onSurface,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
+                          _buildTypeSelector(
+                            context,
+                            TransactionType.expense,
+                            selectedType,
+                            colorScheme,
+                            textTheme,
                           ),
                         ],
                       ),
@@ -375,8 +296,8 @@ class TransactionDetailView extends HookConsumerWidget {
                   _buildInfoCard(
                     context,
                     'Tipo',
-                    selectedType.value == 'income' ? 'Receita' : 'Despesa',
-                    selectedType.value == 'income'
+                    selectedType.value.label,
+                    selectedType.value == TransactionType.income
                         ? Icons.trending_up
                         : Icons.trending_down,
                     colorScheme,
@@ -384,7 +305,7 @@ class TransactionDetailView extends HookConsumerWidget {
                   ),
                 const SizedBox(height: 16),
 
-                if (isEditing.value && transaction.isOwnedByUser)
+                if (isEditing.value && isOwnedByUser)
                   InkWell(
                     onTap: () async {
                       final date = await showDatePicker(
@@ -407,14 +328,6 @@ class TransactionDetailView extends HookConsumerWidget {
                             date.day,
                             time.hour,
                             time.minute,
-                          );
-                        } else {
-                          selectedDate.value = DateTime(
-                            date.year,
-                            date.month,
-                            date.day,
-                            selectedDate.value.hour,
-                            selectedDate.value.minute,
                           );
                         }
                       }
@@ -472,7 +385,7 @@ class TransactionDetailView extends HookConsumerWidget {
                 ),
                 const SizedBox(height: 32),
 
-                if (transaction.isOwnedByUser && !isEditing.value)
+                if (isOwnedByUser && !isEditing.value)
                   OutlinedButton.icon(
                     onPressed: isLoading.value
                         ? null
@@ -499,6 +412,57 @@ class TransactionDetailView extends HookConsumerWidget {
     );
   }
 
+  Widget _buildTypeSelector(
+    BuildContext context,
+    TransactionType type,
+    ValueNotifier<TransactionType> selectedType,
+    ColorScheme colorScheme,
+    TextTheme textTheme,
+  ) {
+    final isSelected = selectedType.value == type;
+    return Expanded(
+      child: InkWell(
+        onTap: () => selectedType.value = type,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? colorScheme.primary.withValues(alpha: 0.1)
+                : colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+            border: Border.all(
+              color: isSelected ? colorScheme.primary : colorScheme.outline,
+              width: isSelected ? 2 : 1,
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                isSelected
+                    ? Icons.radio_button_checked
+                    : Icons.radio_button_unchecked,
+                color: isSelected
+                    ? colorScheme.primary
+                    : colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                type.label,
+                style: textTheme.bodyMedium?.copyWith(
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  color: isSelected
+                      ? colorScheme.primary
+                      : colorScheme.onSurface,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildInfoCard(
     BuildContext context,
     String label,
@@ -518,10 +482,7 @@ class TransactionDetailView extends HookConsumerWidget {
       ),
       child: Row(
         children: [
-          Icon(
-            icon,
-            color: colorScheme.onSurfaceVariant,
-          ),
+          Icon(icon, color: colorScheme.onSurfaceVariant),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -551,30 +512,19 @@ class TransactionDetailView extends HookConsumerWidget {
   void _saveTransaction(
     BuildContext context,
     GlobalKey<FormState> formKey,
-    String title,
-    String description,
-    String amount,
-    String type,
-    DateTime date,
     ValueNotifier<bool> isLoading,
     ValueNotifier<bool> isEditing,
   ) async {
     if (formKey.currentState!.validate()) {
       isLoading.value = true;
-
-      // TODO: Implementar salvamento real
+      // TODO: Conectar ao ViewModel real na próxima etapa
       await Future.delayed(const Duration(seconds: 1));
 
       if (context.mounted) {
         isLoading.value = false;
         isEditing.value = false;
-
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Transação atualizada com sucesso!'),
-            backgroundColor: Theme.of(context).colorScheme.primary,
-            behavior: SnackBarBehavior.floating,
-          ),
+          const SnackBar(content: Text('Transação atualizada (Mock)!')),
         );
       }
     }
@@ -585,9 +535,7 @@ class TransactionDetailView extends HookConsumerWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Excluir transação'),
-        content: const Text(
-          'Tem certeza que deseja excluir esta transação? Esta ação não pode ser desfeita.',
-        ),
+        content: const Text('Tem certeza que deseja excluir esta transação?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -597,21 +545,11 @@ class TransactionDetailView extends HookConsumerWidget {
             onPressed: () async {
               Navigator.of(context).pop();
               isLoading.value = true;
-
-              // TODO: Implementar exclusão real
+              // TODO: Conectar ao ViewModel real na próxima etapa
               await Future.delayed(const Duration(seconds: 1));
-
               isLoading.value = false;
-
               if (context.mounted) {
                 context.pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: const Text('Transação excluída com sucesso!'),
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
               }
             },
             style: TextButton.styleFrom(

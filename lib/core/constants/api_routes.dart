@@ -3,9 +3,13 @@ class ApiRoutes {
   static const String register = '/auth/register';
   static const String refreshToken = '/auth/refresh';
   static const String logout = '/auth/logout';
+
   static const String userProfile = '/user';
   static const String userPreferences = '/user/preferences';
   static const String updatePassword = '/user/password';
+
+  static const String transactions = '/transactions';
+  static String transactionById(int id) => '$transactions/$id';
 
   static const Set<String> publicEndpoints = {
     login,

@@ -12,21 +12,23 @@ abstract class TransactionModel with _$TransactionModel {
   const factory TransactionModel({
     required int id,
     required String title,
-
-    @JsonKey(fromJson: _stringToDouble, toJson: _doubleToString)
+    String? description,
     required double amount,
-
     required TransactionType type,
 
     @JsonKey(name: 'category') @Default('Outros') String category,
 
     @JsonKey(name: 'transaction_date') required DateTime date,
 
+    @JsonKey(name: 'created_at') required DateTime createdAt,
+
+    @JsonKey(name: 'user_id') required int userId,
+
+    @JsonKey(name: 'user_name') required String userName,
+
     @JsonKey(name: 'group_id') int? groupId,
 
-    String? description,
-
-    @JsonKey(name: 'created_at') required DateTime createdAt,
+    @JsonKey(name: 'group_name') String? groupName,
   }) = _TransactionModel;
 
   factory TransactionModel.fromJson(Map<String, dynamic> json) =>
@@ -45,14 +47,6 @@ abstract class TransactionModel with _$TransactionModel {
   String get formattedDate {
     return DateFormat('dd/MM/yyyy').format(date);
   }
-}
 
-double _stringToDouble(dynamic value) {
-  if (value is num) return value.toDouble();
-  if (value is String) return double.tryParse(value) ?? 0.0;
-  return 0.0;
-}
-
-String _doubleToString(double value) {
-  return value.toStringAsFixed(2);
+  bool isOwnedBy(int currentUserId) => userId == currentUserId;
 }
