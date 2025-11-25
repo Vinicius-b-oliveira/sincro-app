@@ -4,6 +4,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:sincro/core/constants/transaction_categories.dart';
 import 'package:sincro/core/enums/transaction_type.dart';
+import 'package:sincro/core/session/session_notifier.dart';
+import 'package:sincro/core/session/session_state.dart';
 import 'package:sincro/core/utils/currency_input_formatter.dart';
 import 'package:sincro/core/utils/validators.dart';
 import 'package:sincro/features/transactions/presentation/viewmodels/add_transaction/add_transaction_viewmodel.dart';
@@ -13,6 +15,9 @@ class AddTransactionForm extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final sessionState = ref.watch(sessionProvider);
+    final currentUser = sessionState.whenOrNull(authenticated: (u) => u);
+
     final titleController = useTextEditingController();
     final descriptionController = useTextEditingController();
     final amountController = useTextEditingController();
@@ -22,7 +27,9 @@ class AddTransactionForm extends HookConsumerWidget {
 
     final transactionType = useState(TransactionType.expense);
     final selectedDate = useState(DateTime.now());
-    final selectedGroupId = useState<int?>(null);
+
+    final selectedGroupId = useState<int?>(currentUser?.favoriteGroupId);
+
     final selectedCategory = useState<String?>(null);
 
     final autovalidateMode = useState(AutovalidateMode.disabled);
@@ -35,6 +42,11 @@ class AddTransactionForm extends HookConsumerWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
+
+    final safeGroupId =
+        availableGroups.any((g) => g.id == selectedGroupId.value)
+        ? selectedGroupId.value
+        : null;
 
     final currentCategories = transactionType.value == TransactionType.income
         ? TransactionCategories.income
@@ -73,6 +85,34 @@ class AddTransactionForm extends HookConsumerWidget {
       } else {
         autovalidateMode.value = AutovalidateMode.onUserInteraction;
       }
+    }
+
+    InputDecoration buildInputDecoration({
+      required String label,
+      IconData? prefixIcon,
+      String? hintText,
+    }) {
+      return InputDecoration(
+        labelText: label,
+        hintText: hintText,
+        prefixIcon: prefixIcon != null ? Icon(prefixIcon) : null,
+        filled: true,
+        fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(
+            color: colorScheme.outline.withValues(alpha: 0.1),
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: colorScheme.primary, width: 2),
+        ),
+      );
     }
 
     return Form(
@@ -116,10 +156,10 @@ class AddTransactionForm extends HookConsumerWidget {
           TextFormField(
             controller: titleController,
             textCapitalization: TextCapitalization.sentences,
-            decoration: const InputDecoration(
-              labelText: 'Título',
+            decoration: buildInputDecoration(
+              label: 'Título',
               hintText: 'Ex: Almoço, Salário',
-              prefixIcon: Icon(Icons.title),
+              prefixIcon: Icons.title,
             ),
             validator: AppValidators.required('Informe um título'),
           ),
@@ -129,9 +169,9 @@ class AddTransactionForm extends HookConsumerWidget {
             controller: amountController,
             keyboardType: TextInputType.number,
             inputFormatters: [CurrencyInputFormatter()],
-            decoration: const InputDecoration(
-              labelText: 'Valor',
-              prefixIcon: Icon(Icons.attach_money),
+            decoration: buildInputDecoration(
+              label: 'Valor',
+              prefixIcon: Icons.attach_money,
             ),
             validator: AppValidators.compose([
               AppValidators.required('Informe o valor'),
@@ -148,9 +188,9 @@ class AddTransactionForm extends HookConsumerWidget {
           TextFormField(
             controller: dateController,
             readOnly: true,
-            decoration: const InputDecoration(
-              labelText: 'Data',
-              prefixIcon: Icon(Icons.calendar_today),
+            decoration: buildInputDecoration(
+              label: 'Data',
+              prefixIcon: Icons.calendar_today,
             ),
             onTap: () async {
               final picked = await showDatePicker(
@@ -169,9 +209,9 @@ class AddTransactionForm extends HookConsumerWidget {
 
           DropdownButtonFormField<String>(
             initialValue: selectedCategory.value,
-            decoration: const InputDecoration(
-              labelText: 'Categoria',
-              prefixIcon: Icon(Icons.category_outlined),
+            decoration: buildInputDecoration(
+              label: 'Categoria',
+              prefixIcon: Icons.category_outlined,
             ),
             items: currentCategories.map((category) {
               return DropdownMenuItem(
@@ -186,10 +226,10 @@ class AddTransactionForm extends HookConsumerWidget {
           const SizedBox(height: 16),
 
           DropdownButtonFormField<int>(
-            initialValue: selectedGroupId.value,
-            decoration: const InputDecoration(
-              labelText: 'Grupo (Opcional)',
-              prefixIcon: Icon(Icons.group_outlined),
+            initialValue: safeGroupId,
+            decoration: buildInputDecoration(
+              label: 'Grupo (Opcional)',
+              prefixIcon: Icons.group_outlined,
             ),
             items: [
               const DropdownMenuItem<int>(
@@ -211,14 +251,17 @@ class AddTransactionForm extends HookConsumerWidget {
             controller: descriptionController,
             maxLines: 3,
             textCapitalization: TextCapitalization.sentences,
-            decoration: const InputDecoration(
-              labelText: 'Descrição (Opcional)',
-              alignLabelWithHint: true,
-              prefixIcon: Padding(
-                padding: EdgeInsets.only(bottom: 48),
-                child: Icon(Icons.description),
-              ),
-            ),
+            decoration:
+                buildInputDecoration(
+                  label: 'Descrição (Opcional)',
+                  prefixIcon: Icons.description,
+                ).copyWith(
+                  alignLabelWithHint: true,
+                  prefixIcon: const Padding(
+                    padding: EdgeInsets.only(bottom: 48),
+                    child: Icon(Icons.description),
+                  ),
+                ),
           ),
           const SizedBox(height: 32),
 
@@ -228,6 +271,9 @@ class AddTransactionForm extends HookConsumerWidget {
               padding: const EdgeInsets.symmetric(vertical: 16),
               backgroundColor: colorScheme.primary,
               foregroundColor: colorScheme.onPrimary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             child: isLoading
                 ? SizedBox(

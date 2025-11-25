@@ -54,6 +54,12 @@ class HistoryView extends HookConsumerWidget {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => context.pushNamed(AppRoutes.addTransaction),
+        backgroundColor: colorScheme.primary,
+        foregroundColor: colorScheme.onPrimary,
+        child: const Icon(Icons.add),
+      ),
       body: RefreshIndicator(
         onRefresh: () => viewModel.refresh(),
         child: CustomScrollView(
@@ -120,18 +126,6 @@ class HistoryView extends HookConsumerWidget {
                           },
                           child: const Text('Limpar filtros'),
                         ),
-
-                      const Spacer(),
-
-                      FilledButton(
-                        onPressed: () =>
-                            context.pushNamed(AppRoutes.addTransaction),
-                        style: FilledButton.styleFrom(
-                          padding: const EdgeInsets.all(12),
-                          shape: const CircleBorder(),
-                        ),
-                        child: const Icon(Icons.add),
-                      ),
                     ],
                   ),
 

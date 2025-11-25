@@ -49,30 +49,28 @@ class FavoriteGroupBottomSheet extends HookConsumerWidget {
     }, []);
 
     Future<void> saveFavorite() async {
-      if (selectedGroupId.value != null) {
-        await ref
-            .read(profileViewModelProvider.notifier)
-            .updateFavoriteGroup(
-              selectedGroupId.value,
-            );
+      await ref
+          .read(profileViewModelProvider.notifier)
+          .updateFavoriteGroup(
+            selectedGroupId.value,
+          );
 
-        final currentState = ref.read(profileViewModelProvider);
-        currentState.maybeWhen(
-          error: (_) {},
-          orElse: () {
-            if (context.mounted) {
-              Navigator.of(context).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text('Grupo favorito atualizado!'),
-                  backgroundColor: colorScheme.primary,
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            }
-          },
-        );
-      }
+      final currentState = ref.read(profileViewModelProvider);
+      currentState.maybeWhen(
+        error: (_) {},
+        orElse: () {
+          if (context.mounted) {
+            Navigator.of(context).pop();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('Grupo favorito atualizado!'),
+                backgroundColor: colorScheme.primary,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+        },
+      );
     }
 
     return Container(
@@ -123,25 +121,41 @@ class FavoriteGroupBottomSheet extends HookConsumerWidget {
                 ? const Center(child: CircularProgressIndicator())
                 : groups.value.isEmpty
                 ? _buildEmptyState(colorScheme, textTheme)
-                : ListView.builder(
+                : ListView(
                     shrinkWrap: true,
-                    itemCount: groups.value.length,
-                    itemBuilder: (context, index) {
-                      final group = groups.value[index];
-
-                      final isCurrentFavorite = group.id == currentFavoriteId;
-
-                      return _GroupItem(
-                        id: group.id,
-                        name: group.name,
-                        memberCount: group.membersCount,
-                        isCurrentFavorite: isCurrentFavorite,
-                        isSelected: selectedGroupId.value == group.id,
-                        onTap: () => selectedGroupId.value = group.id,
+                    children: [
+                      _GroupItem(
+                        id: -1,
+                        name: 'Nenhum (Pessoal)',
+                        memberCount: 0,
+                        isCurrentFavorite: currentFavoriteId == null,
+                        isSelected: selectedGroupId.value == null,
+                        onTap: () => selectedGroupId.value = null,
                         colorScheme: colorScheme,
                         textTheme: textTheme,
-                      );
-                    },
+                        isNoneOption: true,
+                      ),
+
+                      ...groups.value.map((group) {
+                        final isCurrentFavorite = group.id == currentFavoriteId;
+                        return _GroupItem(
+                          id: group.id,
+                          name: group.name,
+                          memberCount: group.membersCount,
+                          isCurrentFavorite: isCurrentFavorite,
+                          isSelected: selectedGroupId.value == group.id,
+                          onTap: () {
+                            if (selectedGroupId.value == group.id) {
+                              selectedGroupId.value = null;
+                            } else {
+                              selectedGroupId.value = group.id;
+                            }
+                          },
+                          colorScheme: colorScheme,
+                          textTheme: textTheme,
+                        );
+                      }),
+                    ],
                   ),
           ),
 
@@ -172,8 +186,7 @@ class FavoriteGroupBottomSheet extends HookConsumerWidget {
                 child: ElevatedButton(
                   onPressed: profileState.maybeWhen(
                     loading: () => null,
-                    orElse: () =>
-                        selectedGroupId.value != null ? saveFavorite : null,
+                    orElse: () => saveFavorite,
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: colorScheme.primary,
@@ -256,6 +269,7 @@ class _GroupItem extends StatelessWidget {
   final VoidCallback onTap;
   final ColorScheme colorScheme;
   final TextTheme textTheme;
+  final bool isNoneOption;
 
   const _GroupItem({
     required this.id,
@@ -266,6 +280,7 @@ class _GroupItem extends StatelessWidget {
     required this.onTap,
     required this.colorScheme,
     required this.textTheme,
+    this.isNoneOption = false,
   });
 
   @override
@@ -297,21 +312,28 @@ class _GroupItem extends StatelessWidget {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: isSelected
-                        ? colorScheme.primary
-                        : colorScheme.secondary,
+                    color: isNoneOption
+                        ? colorScheme.surfaceContainerHighest
+                        : (isSelected
+                              ? colorScheme.primary
+                              : colorScheme.secondary),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Center(
-                    child: Text(
-                      name.isNotEmpty ? name[0].toUpperCase() : '?',
-                      style: textTheme.titleMedium?.copyWith(
-                        color: isSelected
-                            ? colorScheme.onPrimary
-                            : colorScheme.onSecondary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    child: isNoneOption
+                        ? Icon(
+                            Icons.person_off_outlined,
+                            color: colorScheme.onSurfaceVariant,
+                          )
+                        : Text(
+                            name.isNotEmpty ? name[0].toUpperCase() : '?',
+                            style: textTheme.titleMedium?.copyWith(
+                              color: isSelected
+                                  ? colorScheme.onPrimary
+                                  : colorScheme.onSecondary,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -355,13 +377,15 @@ class _GroupItem extends StatelessWidget {
                             ),
                         ],
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '$memberCount ${memberCount == 1 ? 'membro' : 'membros'}',
-                        style: textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
+                      if (!isNoneOption) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          '$memberCount ${memberCount == 1 ? 'membro' : 'membros'}',
+                          style: textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
                         ),
-                      ),
+                      ],
                     ],
                   ),
                 ),
