@@ -7,7 +7,7 @@ import 'package:sincro/core/session/session_notifier.dart';
 import 'package:sincro/core/session/session_state.dart';
 import 'package:sincro/core/widgets/app_shell.dart';
 import 'package:sincro/core/widgets/splash_view.dart';
-import 'package:sincro/features/analytics/presentation/view/analytics_view.dart';
+import 'package:sincro/features/analytics/presentation/views/analytics_view.dart';
 import 'package:sincro/features/auth/presentation/view/login_view.dart';
 import 'package:sincro/features/auth/presentation/view/signup_view.dart';
 import 'package:sincro/features/groups/presentation/view/create_group_view.dart';
