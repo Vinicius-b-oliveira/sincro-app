@@ -16,7 +16,7 @@ class AddTransactionForm extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final sessionState = ref.watch(sessionProvider);
-    final currentUser = sessionState.whenOrNull(authenticated: (u) => u);
+    final currentUser = sessionState.whenOrNull(authenticated: (user) => user);
 
     final titleController = useTextEditingController();
     final descriptionController = useTextEditingController();
@@ -29,7 +29,6 @@ class AddTransactionForm extends HookConsumerWidget {
     final selectedDate = useState(DateTime.now());
 
     final selectedGroupId = useState<int?>(currentUser?.favoriteGroupId);
-
     final selectedCategory = useState<String?>(null);
 
     final autovalidateMode = useState(AutovalidateMode.disabled);
@@ -209,6 +208,7 @@ class AddTransactionForm extends HookConsumerWidget {
 
           DropdownButtonFormField<String>(
             initialValue: selectedCategory.value,
+            menuMaxHeight: 300,
             decoration: buildInputDecoration(
               label: 'Categoria',
               prefixIcon: Icons.category_outlined,
@@ -227,6 +227,7 @@ class AddTransactionForm extends HookConsumerWidget {
 
           DropdownButtonFormField<int>(
             initialValue: safeGroupId,
+            menuMaxHeight: 300,
             decoration: buildInputDecoration(
               label: 'Grupo (Opcional)',
               prefixIcon: Icons.group_outlined,
