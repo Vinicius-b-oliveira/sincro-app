@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:sincro/core/models/transaction_model.dart';
 import 'package:sincro/core/routing/app_routes.dart';
 import 'package:sincro/core/session/session_notifier.dart';
 import 'package:sincro/core/session/session_state.dart';
@@ -20,6 +21,7 @@ import 'package:sincro/features/home/presentation/view/home_view.dart';
 import 'package:sincro/features/profile/presentation/views/profile_view.dart';
 import 'package:sincro/features/transactions/presentation/view/add_transaction_view.dart';
 import 'package:sincro/features/transactions/presentation/view/history_view.dart';
+import 'package:sincro/features/transactions/presentation/view/transaction_detail_view.dart';
 
 part 'app_router.g.dart';
 
@@ -145,10 +147,16 @@ GoRouter goRouter(Ref ref) {
         name: AppRoutes.transactionDetail,
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) {
-          final transactionId = state.pathParameters['id'] ?? '1';
-          return Scaffold(
-            appBar: AppBar(title: Text('Transação $transactionId')),
-          );
+          final transaction = state.extra as TransactionModel?;
+
+          if (transaction == null) {
+            return Scaffold(
+              appBar: AppBar(title: const Text('Erro')),
+              body: const Center(child: Text('Transação não encontrada')),
+            );
+          }
+
+          return TransactionDetailView(transaction: transaction);
         },
       ),
       GoRoute(

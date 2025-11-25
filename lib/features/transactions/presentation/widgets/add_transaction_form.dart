@@ -271,7 +271,7 @@ class AddTransactionForm extends HookConsumerWidget {
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
               backgroundColor: colorScheme.primary,
-              foregroundColor: colorScheme.onPrimary,
+              foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -282,13 +282,14 @@ class AddTransactionForm extends HookConsumerWidget {
                     width: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: colorScheme.onPrimary,
+                      color: Colors.white,
                     ),
                   )
                 : Text(
                     'Salvar Transação',
                     style: textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
                   ),
           ),
