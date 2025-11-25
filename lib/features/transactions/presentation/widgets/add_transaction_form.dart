@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:sincro/core/constants/transaction_categories.dart';
 import 'package:sincro/core/enums/transaction_type.dart';
+import 'package:sincro/core/utils/currency_input_formatter.dart';
 import 'package:sincro/core/utils/validators.dart';
 import 'package:sincro/features/transactions/presentation/viewmodels/add_transaction/add_transaction_viewmodel.dart';
 
@@ -126,18 +127,18 @@ class AddTransactionForm extends HookConsumerWidget {
 
           TextFormField(
             controller: amountController,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            keyboardType: TextInputType.number,
+            inputFormatters: [CurrencyInputFormatter()],
             decoration: const InputDecoration(
               labelText: 'Valor',
-              prefixText: 'R\$ ',
               prefixIcon: Icon(Icons.attach_money),
             ),
             validator: AppValidators.compose([
               AppValidators.required('Informe o valor'),
               (value) {
-                if (value == null) return null;
-                final clean = value.replaceAll(',', '.');
-                if (double.tryParse(clean) == null) return 'Valor inválido';
+                if (CurrencyInputFormatter.parseToDouble(value ?? '') <= 0) {
+                  return 'Valor inválido';
+                }
                 return null;
               },
             ]),

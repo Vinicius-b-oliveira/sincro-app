@@ -2,6 +2,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sincro/core/enums/transaction_type.dart';
 import 'package:sincro/core/errors/app_failure.dart';
 import 'package:sincro/core/models/group_model.dart';
+import 'package:sincro/core/utils/currency_input_formatter.dart';
 import 'package:sincro/features/profile/profile_providers.dart';
 import 'package:sincro/features/transactions/presentation/viewmodels/add_transaction/add_transaction_state.dart';
 import 'package:sincro/features/transactions/presentation/viewmodels/history/history_viewmodel.dart';
@@ -29,7 +30,14 @@ class AddTransactionViewModel extends _$AddTransactionViewModel {
     final currentState = state.value ?? const AddTransactionState();
     state = AsyncData(currentState.copyWith(isLoading: true, error: null));
 
-    final amount = double.tryParse(amountStr.replaceAll(',', '.')) ?? 0.0;
+    final amount = CurrencyInputFormatter.parseToDouble(amountStr);
+
+    if (amount <= 0) {
+      state = AsyncData(
+        currentState.copyWith(isLoading: false, error: 'Valor inválido'),
+      );
+      return;
+    }
 
     final repository = ref.read(transactionRepositoryProvider);
 
@@ -58,7 +66,6 @@ class AddTransactionViewModel extends _$AddTransactionViewModel {
       },
       (transaction) {
         ref.invalidate(historyViewModelProvider);
-
         state = AsyncData(
           currentState.copyWith(isLoading: false, isSuccess: true),
         );

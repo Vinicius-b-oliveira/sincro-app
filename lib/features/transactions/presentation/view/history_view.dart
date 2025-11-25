@@ -2,10 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:sincro/core/enums/transaction_type.dart';
 import 'package:sincro/core/models/group_model.dart';
+import 'package:sincro/core/routing/app_routes.dart';
 import 'package:sincro/features/transactions/presentation/viewmodels/history/history_viewmodel.dart';
 import 'package:sincro/features/transactions/presentation/widgets/history_filter_panel.dart';
 import 'package:sincro/features/transactions/presentation/widgets/transaction_list_item.dart';
@@ -118,6 +120,18 @@ class HistoryView extends HookConsumerWidget {
                           },
                           child: const Text('Limpar filtros'),
                         ),
+
+                      const Spacer(),
+
+                      FilledButton(
+                        onPressed: () =>
+                            context.pushNamed(AppRoutes.addTransaction),
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.all(12),
+                          shape: const CircleBorder(),
+                        ),
+                        child: const Icon(Icons.add),
+                      ),
                     ],
                   ),
 
