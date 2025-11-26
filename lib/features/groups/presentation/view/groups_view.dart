@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:sincro/core/models/group_model.dart';
 import 'package:sincro/core/routing/app_routes.dart';
+import 'package:sincro/features/groups/presentation/viewmodels/groups_list/groups_list_viewmodel.dart';
 
 class GroupsView extends HookConsumerWidget {
   const GroupsView({super.key});
@@ -12,136 +14,119 @@ class GroupsView extends HookConsumerWidget {
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
 
+    final groupsStateAsync = ref.watch(groupsListViewModelProvider);
+
     return Scaffold(
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const SizedBox(height: 16),
+      body: RefreshIndicator(
+        onRefresh: () =>
+            ref.read(groupsListViewModelProvider.notifier).refresh(),
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 16),
 
-            ElevatedButton(
-              onPressed: () => context.push(AppRoutes.createGroup),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: colorScheme.primary,
-                foregroundColor: colorScheme.onPrimary,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
-              child: Text(
-                'Criar novo grupo',
-                style: textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: colorScheme.onPrimary,
+              ElevatedButton(
+                onPressed: () => context.push(AppRoutes.createGroup),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: colorScheme.primary,
+                  foregroundColor: colorScheme.onPrimary,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+                child: Text(
+                  'Criar novo grupo',
+                  style: textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onPrimary,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-            ElevatedButton(
-              onPressed: () => context.push(AppRoutes.groupInvites),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: colorScheme.primary,
-                foregroundColor: colorScheme.onPrimary,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
-              child: Text(
-                'Entrar em um grupo',
-                style: textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: colorScheme.onPrimary,
+              ElevatedButton(
+                onPressed: () => context.push(AppRoutes.groupInvites),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: colorScheme.primary,
+                  foregroundColor: colorScheme.onPrimary,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+                child: Text(
+                  'Entrar em um grupo',
+                  style: textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onPrimary,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 48),
+              const SizedBox(height: 48),
 
-            Text(
-              'Grupos existentes',
-              textAlign: TextAlign.center,
-              style: textTheme.headlineSmall?.copyWith(
-                color: colorScheme.primary,
-                fontWeight: FontWeight.bold,
+              Text(
+                'Grupos existentes',
+                textAlign: TextAlign.center,
+                style: textTheme.headlineSmall?.copyWith(
+                  color: colorScheme.primary,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-            const SizedBox(height: 24),
+              const SizedBox(height: 24),
 
-            _buildGroupList(context, colorScheme),
-          ],
+              groupsStateAsync.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (err, stack) => Center(
+                  child: Text('Erro ao carregar grupos: $err'),
+                ),
+                data: (state) {
+                  if (state.error != null) {
+                    return Center(child: Text(state.error!));
+                  }
+
+                  if (state.groups.isEmpty) {
+                    return const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(16.0),
+                        child: Text(
+                          'Você ainda não participa de nenhum grupo.',
+                        ),
+                      ),
+                    );
+                  }
+
+                  return ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: state.groups.length,
+                    itemBuilder: (context, index) {
+                      final group = state.groups[index];
+                      final color = index.isEven
+                          ? colorScheme.secondary.withValues(alpha: 0.7)
+                          : colorScheme.secondary.withValues(alpha: 0.4);
+
+                      return _GroupListItem(
+                        group: group,
+                        color: color,
+                        textColor: colorScheme.onSecondary,
+                      );
+                    },
+                  );
+                },
+              ),
+            ],
+          ),
         ),
       ),
-    );
-  }
-
-  Widget _buildGroupList(BuildContext context, ColorScheme colorScheme) {
-    final groups = [
-      (
-        id: '1',
-        name: 'Ap. 101',
-        memberCount: 4,
-        totalBalance: 'R\$ 1.250,30',
-        description: 'Apartamento compartilhado',
-      ),
-      (
-        id: '2',
-        name: 'Viagem FDS',
-        memberCount: 6,
-        totalBalance: 'R\$ 850,00',
-        description: 'Viagem para a praia',
-      ),
-      (
-        id: '3',
-        name: 'Presente da Mãe',
-        memberCount: 3,
-        totalBalance: 'R\$ 320,50',
-        description: 'Presente de aniversário',
-      ),
-      (
-        id: '4',
-        name: 'Contas da Casa',
-        memberCount: 2,
-        totalBalance: 'R\$ 2.100,75',
-        description: 'Despesas domésticas',
-      ),
-    ];
-
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: groups.length,
-      itemBuilder: (context, index) {
-        final group = groups[index];
-        final color = index.isEven
-            ? colorScheme.secondary.withValues(alpha: 0.7)
-            : colorScheme.secondary.withValues(alpha: 0.4);
-
-        return _GroupListItem(
-          id: group.id,
-          name: group.name,
-          memberCount: group.memberCount,
-          totalBalance: group.totalBalance,
-          description: group.description,
-          color: color,
-          textColor: colorScheme.onSecondary,
-        );
-      },
     );
   }
 }
 
 class _GroupListItem extends StatelessWidget {
-  final String id;
-  final String name;
-  final int memberCount;
-  final String totalBalance;
-  final String description;
+  final GroupModel group;
   final Color color;
   final Color textColor;
 
   const _GroupListItem({
-    required this.id,
-    required this.name,
-    required this.memberCount,
-    required this.totalBalance,
-    required this.description,
+    required this.group,
     required this.color,
     required this.textColor,
   });
@@ -150,8 +135,9 @@ class _GroupListItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: () {
-        context.push(
-          AppRoutes.groupDetails.replaceAll(':id', id),
+        context.pushNamed(
+          AppRoutes.groupDetails,
+          pathParameters: {'id': group.id.toString()},
         );
       },
       borderRadius: BorderRadius.circular(8.0),
@@ -188,7 +174,7 @@ class _GroupListItem extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        name,
+                        group.name,
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: textColor,
@@ -196,35 +182,26 @@ class _GroupListItem extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        description,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: textColor.withValues(alpha: 0.8),
+                      if (group.description != null) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          group.description!,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: textColor.withValues(alpha: 0.8),
+                              ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                      ],
                     ],
                   ),
                 ),
 
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      totalBalance,
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: textColor,
-                      ),
-                    ),
-                    Icon(
-                      Icons.arrow_forward_ios,
-                      size: 16,
-                      color: textColor.withValues(alpha: 0.7),
-                    ),
-                  ],
+                Icon(
+                  Icons.arrow_forward_ios,
+                  size: 16,
+                  color: textColor.withValues(alpha: 0.7),
                 ),
               ],
             ),
@@ -253,7 +230,7 @@ class _GroupListItem extends StatelessWidget {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        '$memberCount membros',
+                        '${group.membersCount} membros',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: textColor,
                           fontSize: 10,
