@@ -22,8 +22,13 @@ class GroupsRepositoryImpl implements GroupsRepository {
   TaskEither<AppFailure, GroupModel> createGroup({
     required String name,
     String? description,
+    List<String>? initialMembers,
   }) {
-    return _dataSource.createGroup(name: name, description: description);
+    return _dataSource.createGroup(
+      name: name,
+      description: description,
+      initialMembers: initialMembers,
+    );
   }
 
   @override

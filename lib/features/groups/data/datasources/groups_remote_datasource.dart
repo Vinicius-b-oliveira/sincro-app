@@ -12,6 +12,7 @@ abstract class GroupsRemoteDataSource {
   TaskEither<AppFailure, GroupModel> createGroup({
     required String name,
     String? description,
+    List<String>? initialMembers,
   });
 
   TaskEither<AppFailure, GroupModel> getGroup(String id);

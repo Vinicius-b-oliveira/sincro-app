@@ -36,24 +36,24 @@ class GroupsRemoteDataSourceImpl implements GroupsRemoteDataSource {
   TaskEither<AppFailure, GroupModel> createGroup({
     required String name,
     String? description,
+    List<String>? initialMembers,
   }) {
-    return _client
-        .post(
-          ApiRoutes.groups,
-          data: {
-            'name': name,
-            if (description != null) 'description': description,
-          },
-        )
-        .map((response) {
-          return GroupModel.fromJson(response.data);
-        });
+    final data = <String, dynamic>{
+      'name': name,
+      if (description != null) 'description': description,
+      if (initialMembers != null && initialMembers.isNotEmpty)
+        'initial_members': initialMembers,
+    };
+
+    return _client.post(ApiRoutes.groups, data: data).map((response) {
+      return GroupModel.fromJson(response.data['data']);
+    });
   }
 
   @override
   TaskEither<AppFailure, GroupModel> getGroup(String id) {
     return _client.get(ApiRoutes.groupById(id)).map((response) {
-      return GroupModel.fromJson(response.data);
+      return GroupModel.fromJson(response.data['data']);
     });
   }
 }

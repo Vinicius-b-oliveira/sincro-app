@@ -16,13 +16,18 @@ class CreateGroupViewModel extends _$CreateGroupViewModel {
   Future<void> createGroup({
     required String name,
     String? description,
+    List<String>? initialMembers,
   }) async {
     state = const CreateGroupState.loading();
 
     final repository = ref.read(groupsRepositoryProvider);
 
     final result = await repository
-        .createGroup(name: name, description: description)
+        .createGroup(
+          name: name,
+          description: description,
+          initialMembers: initialMembers,
+        )
         .run();
 
     result.fold(
