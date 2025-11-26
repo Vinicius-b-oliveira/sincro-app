@@ -11,6 +11,11 @@ class ApiRoutes {
   static const String transactions = '/transactions';
   static String transactionById(int id) => '$transactions/$id';
 
+  static const String groups = '/groups';
+  static String groupById(String id) => '$groups/$id';
+  static String groupMembers(String id) => '$groups/$id/members';
+  static String groupInvites(String id) => '$groups/$id/invitations';
+
   static const String balance = '/balance';
   static const String summary = '/analytics/summary';
 

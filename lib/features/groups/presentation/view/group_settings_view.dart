@@ -102,21 +102,6 @@ class GroupSettingsView extends HookConsumerWidget {
               const SizedBox(height: 8),
 
               _SettingToggleCard(
-                title: 'Membros podem editar transações',
-                description:
-                    'Permitir que membros editem transações criadas por eles',
-                value: settings.membersCanEditTransactions,
-                onChanged: (value) => _updateSetting(
-                  context,
-                  'membersCanEditTransactions',
-                  value,
-                ),
-                colorScheme: colorScheme,
-                textTheme: textTheme,
-              ),
-              const SizedBox(height: 8),
-
-              _SettingToggleCard(
                 title: 'Membros podem convidar outros',
                 description:
                     'Permitir que membros convidem outras pessoas para o grupo',
