@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:sincro/features/groups/presentation/viewmodels/create_group/create_group_state.dart';
 import 'package:sincro/features/groups/presentation/viewmodels/create_group/create_group_viewmodel.dart';
+import 'package:sincro/features/groups/presentation/widgets/group_members_input.dart';
 
 class CreateGroupView extends HookConsumerWidget {
   const CreateGroupView({super.key});
@@ -12,7 +13,6 @@ class CreateGroupView extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final nameController = useTextEditingController();
     final descriptionController = useTextEditingController();
-    final memberEmailController = useTextEditingController();
 
     final formKey = useMemoized(() => GlobalKey<FormState>());
     final autovalidateMode = useState(AutovalidateMode.disabled);
@@ -29,26 +29,6 @@ class CreateGroupView extends HookConsumerWidget {
       loading: () => true,
       orElse: () => false,
     );
-
-    void addMember() {
-      final email = memberEmailController.text.trim();
-      final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-
-      if (email.isNotEmpty && emailRegex.hasMatch(email)) {
-        if (!memberEmails.value.contains(email)) {
-          memberEmails.value = [...memberEmails.value, email];
-          memberEmailController.clear();
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Este e-mail já foi adicionado.')),
-          );
-        }
-      }
-    }
-
-    void removeMember(String email) {
-      memberEmails.value = memberEmails.value.where((e) => e != email).toList();
-    }
 
     ref.listen(createGroupViewModelProvider, (_, next) {
       next.whenOrNull(
@@ -227,94 +207,11 @@ class CreateGroupView extends HookConsumerWidget {
                 ),
                 const SizedBox(height: 24),
 
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.people_outline,
-                              color: colorScheme.secondary,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Membros iniciais',
-                              style: textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: colorScheme.secondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-
-                        Row(
-                          children: [
-                            Expanded(
-                              child: TextFormField(
-                                controller: memberEmailController,
-                                keyboardType: TextInputType.emailAddress,
-                                textInputAction: TextInputAction.done,
-                                enabled: !isLoading,
-                                decoration: InputDecoration(
-                                  labelText: 'E-mail do membro',
-                                  hintText: 'exemplo@email.com',
-                                  prefixIcon: Icon(
-                                    Icons.email_outlined,
-                                    color: colorScheme.onSurfaceVariant,
-                                  ),
-                                  filled: true,
-                                  fillColor: colorScheme.surfaceContainerHighest
-                                      .withValues(alpha: 0.3),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 14,
-                                  ),
-                                ),
-                                onFieldSubmitted: (_) => addMember(),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            IconButton.filled(
-                              onPressed: isLoading ? null : addMember,
-                              icon: const Icon(Icons.add),
-                              style: IconButton.styleFrom(
-                                backgroundColor: colorScheme.secondary,
-                                foregroundColor: colorScheme.onSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        if (memberEmails.value.isNotEmpty) ...[
-                          const SizedBox(height: 16),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: memberEmails.value.map((email) {
-                              return Chip(
-                                label: Text(email),
-                                deleteIcon: const Icon(Icons.close, size: 18),
-                                onDeleted: isLoading
-                                    ? null
-                                    : () => removeMember(email),
-                                backgroundColor: colorScheme.secondaryContainer,
-                                labelStyle: TextStyle(
-                                  color: colorScheme.onSecondaryContainer,
-                                  fontSize: 12,
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
+                GroupMembersInput(
+                  membersList: memberEmails,
+                  isLoading: isLoading,
                 ),
+
                 const SizedBox(height: 32),
 
                 ElevatedButton(

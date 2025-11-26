@@ -46,14 +46,14 @@ class GroupsRemoteDataSourceImpl implements GroupsRemoteDataSource {
     };
 
     return _client.post(ApiRoutes.groups, data: data).map((response) {
-      return GroupModel.fromJson(response.data['data']);
+      return GroupModel.fromJson(response.data);
     });
   }
 
   @override
   TaskEither<AppFailure, GroupModel> getGroup(String id) {
     return _client.get(ApiRoutes.groupById(id)).map((response) {
-      return GroupModel.fromJson(response.data['data']);
+      return GroupModel.fromJson(response.data);
     });
   }
 }
