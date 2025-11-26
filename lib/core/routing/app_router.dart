@@ -88,7 +88,6 @@ GoRouter goRouter(Ref ref) {
         name: AppRoutes.addTransaction,
         parentNavigatorKey: _rootNavigatorKey,
         pageBuilder: (context, state) {
-          // Captura o ID opcional passado via extra
           final initialGroupId = state.extra as int?;
 
           return MaterialPage(

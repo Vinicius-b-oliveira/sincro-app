@@ -3,8 +3,6 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:sincro/core/models/group_model.dart';
 import 'package:sincro/core/routing/app_routes.dart';
-import 'package:sincro/core/session/session_notifier.dart';
-import 'package:sincro/core/session/session_state.dart';
 import 'package:sincro/core/widgets/dashboard/dashboard_balance_card.dart';
 import 'package:sincro/core/widgets/dashboard/dashboard_chart.dart';
 import 'package:sincro/core/widgets/transaction_list_item.dart';
@@ -21,9 +19,6 @@ class GroupDetailView extends HookConsumerWidget {
     final provider = groupDetailViewModelProvider(groupId);
     final state = ref.watch(provider);
     final viewModel = ref.read(provider.notifier);
-
-    final sessionState = ref.watch(sessionProvider);
-    final currentUser = sessionState.whenOrNull(authenticated: (u) => u);
 
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -45,12 +40,6 @@ class GroupDetailView extends HookConsumerWidget {
         backgroundColor: colorScheme.primary,
         foregroundColor: colorScheme.onPrimary,
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () => viewModel.refresh(),
-          ),
-        ],
       ),
       body: RefreshIndicator(
         onRefresh: () => viewModel.refresh(),
@@ -65,7 +54,6 @@ class GroupDetailView extends HookConsumerWidget {
                   data: (group) => _buildGroupActions(
                     context,
                     group,
-                    currentUser?.id,
                     colorScheme,
                   ),
                   loading: () => const SizedBox(height: 48),
@@ -94,7 +82,6 @@ class GroupDetailView extends HookConsumerWidget {
                   data: (group) => _buildPrimaryActions(
                     context,
                     group,
-                    currentUser?.id,
                     colorScheme,
                     textTheme,
                   ),
@@ -114,7 +101,6 @@ class GroupDetailView extends HookConsumerWidget {
                         color: colorScheme.onSurface,
                       ),
                     ),
-                    // TODO: Implementar navegação para "Ver Todas"
                     TextButton(
                       onPressed: () {},
                       child: const Text('Ver todas'),
@@ -178,12 +164,14 @@ class GroupDetailView extends HookConsumerWidget {
   Widget _buildGroupActions(
     BuildContext context,
     GroupModel group,
-    int? currentUserId,
     ColorScheme colorScheme,
   ) {
-    final isOwner = group.owner?.id == currentUserId;
-    final canInvite = isOwner || group.membersCanInvite;
-    final canManage = isOwner;
+    final canInvite =
+        group.role.isOwner ||
+        group.role.isAdmin ||
+        (group.role.isMember && group.membersCanInvite);
+
+    final canManage = group.role.isOwner || group.role.isAdmin;
 
     if (!canInvite && !canManage) {
       return const SizedBox.shrink();
@@ -193,16 +181,18 @@ class GroupDetailView extends HookConsumerWidget {
       children: [
         if (canInvite)
           Expanded(
-            child: FilledButton.tonalIcon(
+            child: ElevatedButton.icon(
               onPressed: () => showModalBottomSheet(
                 context: context,
                 isScrollControlled: true,
                 backgroundColor: Colors.transparent,
                 builder: (context) => const InviteUserBottomSheet(),
               ),
-              icon: const Icon(Icons.person_add_outlined, size: 20),
+              icon: const Icon(Icons.person_add_outlined),
               label: const Text('Convidar'),
-              style: FilledButton.styleFrom(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: colorScheme.primary,
+                foregroundColor: colorScheme.onPrimary,
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -225,11 +215,11 @@ class GroupDetailView extends HookConsumerWidget {
                   groupId: groupId,
                 ),
               ),
-              icon: const Icon(Icons.settings_outlined, size: 20),
+              icon: const Icon(Icons.settings_outlined),
               label: const Text('Gerenciar'),
               style: OutlinedButton.styleFrom(
                 foregroundColor: colorScheme.primary,
-                side: BorderSide(color: colorScheme.primary),
+                side: BorderSide(color: colorScheme.primary, width: 1.5),
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -244,12 +234,13 @@ class GroupDetailView extends HookConsumerWidget {
   Widget _buildPrimaryActions(
     BuildContext context,
     GroupModel group,
-    int? currentUserId,
     ColorScheme colorScheme,
     TextTheme textTheme,
   ) {
-    final isOwner = group.owner?.id == currentUserId;
-    final canAddTransaction = isOwner || group.membersCanAddTransactions;
+    final canAddTransaction =
+        group.role.isOwner ||
+        group.role.isAdmin ||
+        (group.role.isMember && group.membersCanAddTransactions);
 
     return Row(
       children: [
@@ -276,7 +267,7 @@ class GroupDetailView extends HookConsumerWidget {
               ),
             ),
             child: Text(
-              canAddTransaction ? 'Adicionar transação' : 'Apenas Admins',
+              canAddTransaction ? 'Adicionar transação' : 'Sem permissão',
               style: textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: canAddTransaction

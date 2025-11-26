@@ -5,7 +5,7 @@ import 'package:sincro/features/transactions/presentation/viewmodels/add_transac
 import 'package:sincro/features/transactions/presentation/widgets/add_transaction_form.dart';
 
 class AddTransactionView extends ConsumerWidget {
-  final int? initialGroupId; // Novo parâmetro
+  final int? initialGroupId;
 
   const AddTransactionView({
     this.initialGroupId,
@@ -59,7 +59,6 @@ class AddTransactionView extends ConsumerWidget {
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
-          // Passamos o ID para o formulário
           child: AddTransactionForm(initialGroupId: initialGroupId),
         ),
       ),

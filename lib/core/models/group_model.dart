@@ -4,8 +4,23 @@ import 'package:sincro/core/models/user_model.dart';
 part 'group_model.freezed.dart';
 part 'group_model.g.dart';
 
+enum GroupRole {
+  @JsonValue('owner')
+  owner,
+  @JsonValue('admin')
+  admin,
+  @JsonValue('member')
+  member;
+
+  bool get isOwner => this == GroupRole.owner;
+  bool get isAdmin => this == GroupRole.admin;
+  bool get isMember => this == GroupRole.member;
+}
+
 @freezed
 abstract class GroupModel with _$GroupModel {
+  const GroupModel._();
+
   const factory GroupModel({
     required int id,
     required String name,
@@ -17,6 +32,8 @@ abstract class GroupModel with _$GroupModel {
     @Default(false)
     bool membersCanAddTransactions,
     @JsonKey(name: 'members_can_invite') @Default(false) bool membersCanInvite,
+
+    @JsonKey(name: 'role') @Default(GroupRole.member) GroupRole role,
   }) = _GroupModel;
 
   factory GroupModel.fromJson(Map<String, dynamic> json) =>
