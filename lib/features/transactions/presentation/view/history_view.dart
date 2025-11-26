@@ -10,7 +10,7 @@ import 'package:sincro/core/models/group_model.dart';
 import 'package:sincro/core/routing/app_routes.dart';
 import 'package:sincro/features/transactions/presentation/viewmodels/history/history_viewmodel.dart';
 import 'package:sincro/features/transactions/presentation/widgets/history_filter_panel.dart';
-import 'package:sincro/features/transactions/presentation/widgets/transaction_list_item.dart';
+import 'package:sincro/core/widgets/transaction_list_item.dart';
 
 class HistoryView extends HookConsumerWidget {
   const HistoryView({super.key});

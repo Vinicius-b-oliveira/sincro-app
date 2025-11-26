@@ -1,5 +1,6 @@
 import 'package:fpdart/fpdart.dart';
 import 'package:intl/intl.dart';
+import 'package:sincro/core/constants/api_routes.dart';
 import 'package:sincro/core/errors/app_failure.dart';
 import 'package:sincro/core/models/analytics_summary_model.dart';
 import 'package:sincro/core/network/dio_client.dart';
@@ -35,7 +36,7 @@ class AnalyticsRemoteDataSourceImpl implements AnalyticsRemoteDataSource {
       }
     }
 
-    return _client.get('/analytics/summary', queryParameters: queryParams).map((
+    return _client.get(ApiRoutes.summary, queryParameters: queryParams).map((
       response,
     ) {
       return AnalyticsSummaryModel.fromJson(response.data);

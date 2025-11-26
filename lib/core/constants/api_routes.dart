@@ -11,6 +11,9 @@ class ApiRoutes {
   static const String transactions = '/transactions';
   static String transactionById(int id) => '$transactions/$id';
 
+  static const String balance = '/balance';
+  static const String summary = '/analytics/summary';
+
   static const Set<String> publicEndpoints = {
     login,
     register,
