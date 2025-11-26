@@ -13,6 +13,7 @@ class CreateGroupView extends HookConsumerWidget {
     final nameController = useTextEditingController();
     final descriptionController = useTextEditingController();
     final formKey = useMemoized(() => GlobalKey<FormState>());
+    final autovalidateMode = useState(AutovalidateMode.disabled);
 
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -51,6 +52,8 @@ class CreateGroupView extends HookConsumerWidget {
 
     void createGroup() {
       if (formKey.currentState!.validate()) {
+        FocusScope.of(context).unfocus();
+
         ref
             .read(createGroupViewModelProvider.notifier)
             .createGroup(
@@ -59,6 +62,8 @@ class CreateGroupView extends HookConsumerWidget {
                   ? null
                   : descriptionController.text.trim(),
             );
+      } else {
+        autovalidateMode.value = AutovalidateMode.onUserInteraction;
       }
     }
 
@@ -79,6 +84,7 @@ class CreateGroupView extends HookConsumerWidget {
           padding: const EdgeInsets.all(16.0),
           child: Form(
             key: formKey,
+            autovalidateMode: autovalidateMode.value,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
