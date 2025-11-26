@@ -3,6 +3,7 @@ import 'package:sincro/core/constants/api_routes.dart';
 import 'package:sincro/core/errors/app_failure.dart';
 import 'package:sincro/core/models/group_model.dart';
 import 'package:sincro/core/models/paginated_response.dart';
+import 'package:sincro/core/models/transaction_model.dart';
 import 'package:sincro/core/network/dio_client.dart';
 import 'package:sincro/features/groups/data/datasources/groups_remote_datasource.dart';
 
@@ -55,5 +56,24 @@ class GroupsRemoteDataSourceImpl implements GroupsRemoteDataSource {
     return _client.get(ApiRoutes.groupById(id)).map((response) {
       return GroupModel.fromJson(response.data);
     });
+  }
+
+  @override
+  TaskEither<AppFailure, PaginatedResponse<TransactionModel>>
+  getGroupTransactions({
+    required String groupId,
+    required int page,
+  }) {
+    return _client
+        .get(
+          ApiRoutes.groupTransactions(groupId),
+          queryParameters: {'page': page},
+        )
+        .map((response) {
+          return PaginatedResponse<TransactionModel>.fromJson(
+            response.data,
+            (json) => TransactionModel.fromJson(json as Map<String, dynamic>),
+          );
+        });
   }
 }
