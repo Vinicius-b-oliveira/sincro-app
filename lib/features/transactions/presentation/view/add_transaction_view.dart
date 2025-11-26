@@ -5,7 +5,12 @@ import 'package:sincro/features/transactions/presentation/viewmodels/add_transac
 import 'package:sincro/features/transactions/presentation/widgets/add_transaction_form.dart';
 
 class AddTransactionView extends ConsumerWidget {
-  const AddTransactionView({super.key});
+  final int? initialGroupId; // Novo parâmetro
+
+  const AddTransactionView({
+    this.initialGroupId,
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -35,7 +40,6 @@ class AddTransactionView extends ConsumerWidget {
             );
           }
         },
-
         error: (error, stack) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -52,10 +56,11 @@ class AddTransactionView extends ConsumerWidget {
         title: const Text('Adicionar Transação'),
         centerTitle: true,
       ),
-      body: const SafeArea(
+      body: SafeArea(
         child: SingleChildScrollView(
-          padding: EdgeInsets.all(16.0),
-          child: AddTransactionForm(),
+          padding: const EdgeInsets.all(16.0),
+          // Passamos o ID para o formulário
+          child: AddTransactionForm(initialGroupId: initialGroupId),
         ),
       ),
     );

@@ -11,7 +11,12 @@ import 'package:sincro/core/utils/validators.dart';
 import 'package:sincro/features/transactions/presentation/viewmodels/add_transaction/add_transaction_viewmodel.dart';
 
 class AddTransactionForm extends HookConsumerWidget {
-  const AddTransactionForm({super.key});
+  final int? initialGroupId;
+
+  const AddTransactionForm({
+    this.initialGroupId,
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -28,7 +33,10 @@ class AddTransactionForm extends HookConsumerWidget {
     final transactionType = useState(TransactionType.expense);
     final selectedDate = useState(DateTime.now());
 
-    final selectedGroupId = useState<int?>(currentUser?.favoriteGroupId);
+    final selectedGroupId = useState<int?>(
+      initialGroupId ?? currentUser?.favoriteGroupId,
+    );
+
     final selectedCategory = useState<String?>(null);
 
     final autovalidateMode = useState(AutovalidateMode.disabled);

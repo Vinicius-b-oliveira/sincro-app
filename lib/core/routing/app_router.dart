@@ -88,8 +88,11 @@ GoRouter goRouter(Ref ref) {
         name: AppRoutes.addTransaction,
         parentNavigatorKey: _rootNavigatorKey,
         pageBuilder: (context, state) {
-          return const MaterialPage(
-            child: AddTransactionView(),
+          // Captura o ID opcional passado via extra
+          final initialGroupId = state.extra as int?;
+
+          return MaterialPage(
+            child: AddTransactionView(initialGroupId: initialGroupId),
             fullscreenDialog: true,
           );
         },

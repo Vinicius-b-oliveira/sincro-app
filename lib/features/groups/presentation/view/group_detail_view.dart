@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:sincro/core/models/group_model.dart';
 import 'package:sincro/core/routing/app_routes.dart';
+import 'package:sincro/core/session/session_notifier.dart';
+import 'package:sincro/core/session/session_state.dart';
 import 'package:sincro/core/widgets/dashboard/dashboard_balance_card.dart';
 import 'package:sincro/core/widgets/dashboard/dashboard_chart.dart';
 import 'package:sincro/core/widgets/transaction_list_item.dart';
@@ -19,6 +21,9 @@ class GroupDetailView extends HookConsumerWidget {
     final provider = groupDetailViewModelProvider(groupId);
     final state = ref.watch(provider);
     final viewModel = ref.read(provider.notifier);
+
+    final sessionState = ref.watch(sessionProvider);
+    final currentUser = sessionState.whenOrNull(authenticated: (u) => u);
 
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -40,6 +45,12 @@ class GroupDetailView extends HookConsumerWidget {
         backgroundColor: colorScheme.primary,
         foregroundColor: colorScheme.onPrimary,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () => viewModel.refresh(),
+          ),
+        ],
       ),
       body: RefreshIndicator(
         onRefresh: () => viewModel.refresh(),
@@ -51,7 +62,12 @@ class GroupDetailView extends HookConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 state.groupData.when(
-                  data: (group) => _buildGroupActions(context, group),
+                  data: (group) => _buildGroupActions(
+                    context,
+                    group,
+                    currentUser?.id,
+                    colorScheme,
+                  ),
                   loading: () => const SizedBox(height: 48),
                   error: (_, __) => const SizedBox.shrink(),
                 ),
@@ -74,51 +90,18 @@ class GroupDetailView extends HookConsumerWidget {
                 ),
                 const SizedBox(height: 24),
 
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton(
-                        // TODO: Passar o ID do grupo para pré-selecionar na tela de adicionar
-                        onPressed: () =>
-                            context.pushNamed(AppRoutes.addTransaction),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: colorScheme.primary,
-                          foregroundColor: colorScheme.onPrimary,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: Text(
-                          'Adicionar transação',
-                          style: textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: colorScheme.onPrimary,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    ElevatedButton.icon(
-                      onPressed: () => context.push(
-                        '${AppRoutes.analytics}?groupId=$groupId',
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: colorScheme.secondary,
-                        foregroundColor: colorScheme.onSecondary,
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 16,
-                          horizontal: 16,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      icon: const Icon(Icons.analytics, size: 20),
-                      label: const Text('Análises'),
-                    ),
-                  ],
+                state.groupData.when(
+                  data: (group) => _buildPrimaryActions(
+                    context,
+                    group,
+                    currentUser?.id,
+                    colorScheme,
+                    textTheme,
+                  ),
+                  loading: () => const SizedBox(height: 50),
+                  error: (_, __) => const SizedBox.shrink(),
                 ),
+
                 const SizedBox(height: 32),
 
                 Row(
@@ -180,8 +163,7 @@ class GroupDetailView extends HookConsumerWidget {
                   },
                   loading: () =>
                       const Center(child: CircularProgressIndicator()),
-                  error: (err, _) =>
-                      Center(child: Text('Erro ao carregar transações: $err')),
+                  error: (err, _) => Center(child: Text('Erro: $err')),
                 ),
 
                 const SizedBox(height: 80),
@@ -193,48 +175,135 @@ class GroupDetailView extends HookConsumerWidget {
     );
   }
 
-  Widget _buildGroupActions(BuildContext context, GroupModel group) {
+  Widget _buildGroupActions(
+    BuildContext context,
+    GroupModel group,
+    int? currentUserId,
+    ColorScheme colorScheme,
+  ) {
+    final isOwner = group.owner?.id == currentUserId;
+    final canInvite = isOwner || group.membersCanInvite;
+    final canManage = isOwner;
+
+    if (!canInvite && !canManage) {
+      return const SizedBox.shrink();
+    }
+
+    return Row(
+      children: [
+        if (canInvite)
+          Expanded(
+            child: FilledButton.tonalIcon(
+              onPressed: () => showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (context) => const InviteUserBottomSheet(),
+              ),
+              icon: const Icon(Icons.person_add_outlined, size: 20),
+              label: const Text('Convidar'),
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+
+        if (canInvite && canManage) const SizedBox(width: 12),
+
+        if (canManage)
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: () => showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (context) => ManageGroupBottomSheet(
+                  groupName: group.name,
+                  groupId: groupId,
+                ),
+              ),
+              icon: const Icon(Icons.settings_outlined, size: 20),
+              label: const Text('Gerenciar'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: colorScheme.primary,
+                side: BorderSide(color: colorScheme.primary),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildPrimaryActions(
+    BuildContext context,
+    GroupModel group,
+    int? currentUserId,
+    ColorScheme colorScheme,
+    TextTheme textTheme,
+  ) {
+    final isOwner = group.owner?.id == currentUserId;
+    final canAddTransaction = isOwner || group.membersCanAddTransactions;
+
     return Row(
       children: [
         Expanded(
-          child: OutlinedButton.icon(
-            onPressed: () => showModalBottomSheet(
-              context: context,
-              isScrollControlled: true,
-              backgroundColor: Colors.transparent,
-              builder: (context) => const InviteUserBottomSheet(),
-            ),
-            icon: const Icon(Icons.person_add_outlined),
-            label: const Text('Convidar'),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 12),
+          child: ElevatedButton(
+            onPressed: canAddTransaction
+                ? () => context.pushNamed(
+                    AppRoutes.addTransaction,
+                    extra: group.id,
+                  )
+                : null,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: colorScheme.primary,
+              foregroundColor: colorScheme.onPrimary,
+              padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
+              ),
+              disabledBackgroundColor: colorScheme.onSurface.withValues(
+                alpha: 0.12,
+              ),
+              disabledForegroundColor: colorScheme.onSurface.withValues(
+                alpha: 0.38,
+              ),
+            ),
+            child: Text(
+              canAddTransaction ? 'Adicionar transação' : 'Apenas Admins',
+              style: textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: canAddTransaction
+                    ? colorScheme.onPrimary
+                    : colorScheme.onSurface.withValues(alpha: 0.38),
               ),
             ),
           ),
         ),
         const SizedBox(width: 12),
-        Expanded(
-          child: OutlinedButton.icon(
-            onPressed: () => showModalBottomSheet(
-              context: context,
-              isScrollControlled: true,
-              backgroundColor: Colors.transparent,
-              builder: (context) => ManageGroupBottomSheet(
-                groupName: group.name,
-                groupId: group.id.toString(),
-              ),
+        ElevatedButton.icon(
+          onPressed: () => context.push(
+            '${AppRoutes.analytics}?groupId=$groupId',
+          ),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: colorScheme.secondary,
+            foregroundColor: colorScheme.onSecondary,
+            padding: const EdgeInsets.symmetric(
+              vertical: 16,
+              horizontal: 16,
             ),
-            icon: const Icon(Icons.settings_outlined),
-            label: const Text('Gerenciar'),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
             ),
           ),
+          icon: const Icon(Icons.analytics, size: 20),
+          label: const Text('Análises'),
         ),
       ],
     );
