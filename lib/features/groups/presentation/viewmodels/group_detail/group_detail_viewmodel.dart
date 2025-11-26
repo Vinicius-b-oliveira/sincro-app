@@ -5,6 +5,7 @@ import 'package:sincro/core/models/group_model.dart';
 import 'package:sincro/core/models/paginated_response.dart';
 import 'package:sincro/core/models/transaction_model.dart';
 import 'package:sincro/features/analytics/analytics_providers.dart';
+import 'package:sincro/features/analytics/presentation/enums/analytics_enums.dart';
 import 'package:sincro/features/groups/groups_providers.dart';
 import 'package:sincro/features/groups/presentation/viewmodels/group_detail/group_detail_state.dart';
 import 'package:sincro/features/home/home_providers.dart';
@@ -53,6 +54,7 @@ class GroupDetailViewModel extends _$GroupDetailViewModel {
         .getSummary(
           period: '1y',
           groupId: idAsInt,
+          viewMode: ViewMode.group.name,
         )
         .run();
 
