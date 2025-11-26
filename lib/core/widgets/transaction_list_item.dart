@@ -7,9 +7,11 @@ import 'package:sincro/core/utils/category_utils.dart';
 
 class TransactionListItem extends ConsumerWidget {
   final TransactionModel transaction;
+  final bool showMemberName;
 
   const TransactionListItem({
     required this.transaction,
+    this.showMemberName = false,
     super.key,
   });
 
@@ -74,13 +76,36 @@ class TransactionListItem extends ConsumerWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        if (transaction.groupName != null) ...[
-                          const SizedBox(height: 4),
+                        const SizedBox(height: 4),
+
+                        if (showMemberName) ...[
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.person_outline,
+                                size: 14,
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  transaction.userName,
+                                  style: textTheme.bodySmall?.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ] else if (transaction.groupName != null) ...[
                           Row(
                             children: [
                               Icon(
                                 Icons.group_outlined,
-                                size: 12,
+                                size: 14,
                                 color: colorScheme.secondary,
                               ),
                               const SizedBox(width: 4),
