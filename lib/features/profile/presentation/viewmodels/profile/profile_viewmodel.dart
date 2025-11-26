@@ -3,6 +3,7 @@ import 'package:sincro/core/errors/app_failure.dart';
 import 'package:sincro/core/models/group_model.dart';
 import 'package:sincro/core/session/session_notifier.dart';
 import 'package:sincro/features/auth/auth_providers.dart';
+import 'package:sincro/features/groups/groups_providers.dart';
 import 'package:sincro/features/profile/presentation/viewmodels/profile/profile_state.dart';
 import 'package:sincro/features/profile/profile_providers.dart';
 
@@ -17,9 +18,7 @@ class ProfileViewModel extends _$ProfileViewModel {
 
   Future<void> logout() async {
     ref.read(sessionProvider.notifier).setUnauthenticated();
-
     ref.read(authRepositoryProvider).logout().run();
-
     state = const ProfileState.initial();
   }
 
@@ -78,10 +77,14 @@ class ProfileViewModel extends _$ProfileViewModel {
   }
 
   Future<List<GroupModel>> getAvailableGroups() async {
-    final repository = ref.read(profileRepositoryProvider);
-    final result = await repository.getMyGroups().run();
-
-    return result.getOrElse((_) => []);
+    final groupsRepository = ref.read(groupsRepositoryProvider);
+    final result = await groupsRepository
+        .getGroups(page: 1, perPage: 100)
+        .run();
+    return result.fold(
+      (_) => [],
+      (paginated) => paginated.data,
+    );
   }
 
   void _setErrorState(AppFailure failure) {

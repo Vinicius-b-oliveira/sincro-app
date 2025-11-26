@@ -1,6 +1,5 @@
 import 'package:fpdart/fpdart.dart';
 import 'package:sincro/core/errors/app_failure.dart';
-import 'package:sincro/core/models/group_model.dart';
 import 'package:sincro/core/models/user_model.dart';
 import 'package:sincro/core/storage/hive_service.dart';
 import 'package:sincro/features/profile/data/datasources/profile_remote_datasource.dart';
@@ -43,10 +42,5 @@ class ProfileRepositoryImpl implements ProfileRepository {
         .flatMap((user) {
           return _hiveService.saveUser(user).map((_) => user);
         });
-  }
-
-  @override
-  TaskEither<AppFailure, List<GroupModel>> getMyGroups() {
-    return _remoteDataSource.getGroups();
   }
 }

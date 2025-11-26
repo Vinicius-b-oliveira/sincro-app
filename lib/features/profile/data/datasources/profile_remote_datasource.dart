@@ -1,6 +1,5 @@
 import 'package:fpdart/fpdart.dart';
 import 'package:sincro/core/errors/app_failure.dart';
-import 'package:sincro/core/models/group_model.dart';
 import 'package:sincro/core/models/user_model.dart';
 
 abstract class ProfileRemoteDataSource {
@@ -17,6 +16,4 @@ abstract class ProfileRemoteDataSource {
   TaskEither<AppFailure, UserModel> updatePreferences({
     required int? favoriteGroupId,
   });
-
-  TaskEither<AppFailure, List<GroupModel>> getGroups();
 }

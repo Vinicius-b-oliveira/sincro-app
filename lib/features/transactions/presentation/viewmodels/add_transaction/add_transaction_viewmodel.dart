@@ -3,7 +3,7 @@ import 'package:sincro/core/enums/transaction_type.dart';
 import 'package:sincro/core/errors/app_failure.dart';
 import 'package:sincro/core/models/group_model.dart';
 import 'package:sincro/core/utils/currency_input_formatter.dart';
-import 'package:sincro/features/profile/profile_providers.dart';
+import 'package:sincro/features/groups/groups_providers.dart';
 import 'package:sincro/features/transactions/presentation/viewmodels/add_transaction/add_transaction_state.dart';
 import 'package:sincro/features/transactions/presentation/viewmodels/history/history_viewmodel.dart';
 import 'package:sincro/features/transactions/transactions_providers.dart';
@@ -74,8 +74,13 @@ class AddTransactionViewModel extends _$AddTransactionViewModel {
   }
 
   Future<List<GroupModel>> _loadGroups() async {
-    final profileRepository = ref.read(profileRepositoryProvider);
-    final result = await profileRepository.getMyGroups().run();
-    return result.getOrElse((_) => []);
+    final groupsRepository = ref.read(groupsRepositoryProvider);
+    final result = await groupsRepository
+        .getGroups(page: 1, perPage: 100)
+        .run();
+    return result.fold(
+      (_) => [],
+      (paginated) => paginated.data,
+    );
   }
 }

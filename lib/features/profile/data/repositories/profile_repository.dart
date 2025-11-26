@@ -1,6 +1,5 @@
 import 'package:fpdart/fpdart.dart';
 import 'package:sincro/core/errors/app_failure.dart';
-import 'package:sincro/core/models/group_model.dart';
 import 'package:sincro/core/models/user_model.dart';
 
 abstract class ProfileRepository {
@@ -13,6 +12,4 @@ abstract class ProfileRepository {
   });
 
   TaskEither<AppFailure, UserModel> updateFavoriteGroup(int? groupId);
-
-  TaskEither<AppFailure, List<GroupModel>> getMyGroups();
 }
