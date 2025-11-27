@@ -6,6 +6,7 @@ import 'package:sincro/core/models/paginated_response.dart';
 import 'package:sincro/core/models/transaction_model.dart';
 import 'package:sincro/core/network/dio_client.dart';
 import 'package:sincro/features/groups/data/datasources/groups_remote_datasource.dart';
+import 'package:sincro/features/groups/data/models/group_member_model.dart';
 
 class GroupsRemoteDataSourceImpl implements GroupsRemoteDataSource {
   final DioClient _client;
@@ -75,5 +76,41 @@ class GroupsRemoteDataSourceImpl implements GroupsRemoteDataSource {
             (json) => TransactionModel.fromJson(json as Map<String, dynamic>),
           );
         });
+  }
+
+  @override
+  TaskEither<AppFailure, List<GroupMemberModel>> getGroupMembers(
+    String groupId,
+  ) {
+    return _client.get(ApiRoutes.groupMembers(groupId)).map((response) {
+      final list = response.data as List;
+      return list
+          .map((e) => GroupMemberModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+    });
+  }
+
+  @override
+  TaskEither<AppFailure, void> removeMember({
+    required String groupId,
+    required int userId,
+  }) {
+    return _client
+        .delete(ApiRoutes.groupMemberAction(groupId, userId))
+        .map((_) {});
+  }
+
+  @override
+  TaskEither<AppFailure, void> updateMemberRole({
+    required String groupId,
+    required int userId,
+    required String role,
+  }) {
+    return _client
+        .patch(
+          ApiRoutes.groupMemberAction(groupId, userId),
+          data: {'role': role},
+        )
+        .map((_) {});
   }
 }

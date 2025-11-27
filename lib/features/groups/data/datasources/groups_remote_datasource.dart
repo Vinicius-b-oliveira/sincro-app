@@ -3,6 +3,7 @@ import 'package:sincro/core/errors/app_failure.dart';
 import 'package:sincro/core/models/group_model.dart';
 import 'package:sincro/core/models/paginated_response.dart';
 import 'package:sincro/core/models/transaction_model.dart';
+import 'package:sincro/features/groups/data/models/group_member_model.dart';
 
 abstract class GroupsRemoteDataSource {
   TaskEither<AppFailure, PaginatedResponse<GroupModel>> getGroups({
@@ -22,5 +23,20 @@ abstract class GroupsRemoteDataSource {
   getGroupTransactions({
     required String groupId,
     required int page,
+  });
+
+  TaskEither<AppFailure, List<GroupMemberModel>> getGroupMembers(
+    String groupId,
+  );
+
+  TaskEither<AppFailure, void> removeMember({
+    required String groupId,
+    required int userId,
+  });
+
+  TaskEither<AppFailure, void> updateMemberRole({
+    required String groupId,
+    required int userId,
+    required String role,
   });
 }
