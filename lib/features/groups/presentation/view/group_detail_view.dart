@@ -102,7 +102,16 @@ class GroupDetailView extends HookConsumerWidget {
                       ),
                     ),
                     TextButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        final groupName =
+                            state.groupData.asData?.value.name ?? 'Grupo';
+
+                        context.pushNamed(
+                          AppRoutes.groupHistory,
+                          pathParameters: {'id': groupId},
+                          queryParameters: {'name': groupName},
+                        );
+                      },
                       child: const Text('Ver todas'),
                     ),
                   ],

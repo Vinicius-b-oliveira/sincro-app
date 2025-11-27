@@ -13,6 +13,7 @@ import 'package:sincro/features/auth/presentation/view/signup_view.dart';
 import 'package:sincro/features/groups/presentation/view/create_group_view.dart';
 import 'package:sincro/features/groups/presentation/view/edit_group_view.dart';
 import 'package:sincro/features/groups/presentation/view/group_detail_view.dart';
+import 'package:sincro/features/groups/presentation/view/group_history_view.dart';
 import 'package:sincro/features/groups/presentation/view/group_invites_view.dart';
 import 'package:sincro/features/groups/presentation/view/group_settings_view.dart';
 import 'package:sincro/features/groups/presentation/view/groups_view.dart';
@@ -115,6 +116,16 @@ GoRouter goRouter(Ref ref) {
         builder: (context, state) {
           final groupId = state.pathParameters['id'] ?? 'ID_PADRAO';
           return GroupDetailView(groupId: groupId);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.groupHistory,
+        name: AppRoutes.groupHistory,
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) {
+          final groupId = state.pathParameters['id'] ?? '';
+          final groupName = state.uri.queryParameters['name'] ?? 'Histórico';
+          return GroupHistoryView(groupId: groupId, groupName: groupName);
         },
       ),
       GoRoute(
