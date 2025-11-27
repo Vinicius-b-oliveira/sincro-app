@@ -144,8 +144,10 @@ GoRouter goRouter(Ref ref) {
         name: AppRoutes.groupEdit,
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) {
-          final groupId = state.pathParameters['id'] ?? 'ID_PADRAO';
-          return EditGroupView(groupId: groupId);
+          final groupId = state.pathParameters['id'] ?? '';
+          final group = state.extra as GroupModel?;
+
+          return EditGroupView(groupId: groupId, group: group);
         },
       ),
       GoRoute(

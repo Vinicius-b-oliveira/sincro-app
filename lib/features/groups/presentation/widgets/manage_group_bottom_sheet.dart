@@ -210,7 +210,11 @@ class ManageGroupBottomSheet extends HookWidget {
 
   void _handleEditGroup(BuildContext context) {
     Navigator.of(context).pop();
-    context.push(AppRoutes.groupEdit.replaceAll(':id', group.id.toString()));
+    context.pushNamed(
+      AppRoutes.groupEdit,
+      pathParameters: {'id': group.id.toString()},
+      extra: group,
+    );
   }
 
   void _handleSettings(BuildContext context) {

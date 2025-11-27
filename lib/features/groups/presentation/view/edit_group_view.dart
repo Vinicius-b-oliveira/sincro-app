@@ -1,34 +1,155 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:sincro/core/models/group_model.dart';
+import 'package:sincro/core/routing/app_routes.dart';
+import 'package:sincro/core/utils/validators.dart';
+import 'package:sincro/features/groups/presentation/viewmodels/edit_group/edit_group_state.dart';
+import 'package:sincro/features/groups/presentation/viewmodels/edit_group/edit_group_viewmodel.dart';
 
 class EditGroupView extends HookConsumerWidget {
   final String groupId;
+  final GroupModel? group;
 
   const EditGroupView({
     required this.groupId,
+    this.group,
     super.key,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final nameController = useTextEditingController();
-    final descriptionController = useTextEditingController();
+    final initialName = group?.name ?? '';
+    final initialDescription = group?.description ?? '';
+
+    final nameController = useTextEditingController(text: initialName);
+    final descriptionController = useTextEditingController(
+      text: initialDescription,
+    );
+
     final formKey = useMemoized(() => GlobalKey<FormState>());
-    final isLoading = useState(false);
+    final autovalidateMode = useState(AutovalidateMode.disabled);
 
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
 
-    // TODO: Substituir por dados reais do provider/API
-    final currentGroup = _getMockGroupData(groupId);
+    final state = ref.watch(editGroupViewModelProvider);
 
-    useEffect(() {
-      nameController.text = currentGroup.name;
-      descriptionController.text = currentGroup.description;
-      return null;
-    }, []);
+    final isLoading = state.maybeWhen(
+      loading: () => true,
+      orElse: () => false,
+    );
+
+    ref.listen(editGroupViewModelProvider, (_, next) {
+      next.whenOrNull(
+        success: (updatedGroup) {
+          context.pop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Grupo atualizado com sucesso!'),
+              backgroundColor: colorScheme.primary,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        },
+        deleted: () {
+          context.go(AppRoutes.groups);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Grupo excluído com sucesso.'),
+              backgroundColor: colorScheme.primary,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        },
+        error: (message) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(message),
+              backgroundColor: colorScheme.error,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        },
+      );
+    });
+
+    void saveChanges() {
+      if (formKey.currentState!.validate()) {
+        FocusScope.of(context).unfocus();
+        ref
+            .read(editGroupViewModelProvider.notifier)
+            .updateGroup(
+              id: groupId,
+              name: nameController.text.trim(),
+              description: descriptionController.text.trim().isEmpty
+                  ? null
+                  : descriptionController.text.trim(),
+            );
+      } else {
+        autovalidateMode.value = AutovalidateMode.onUserInteraction;
+      }
+    }
+
+    void confirmDelete() {
+      showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Excluir grupo'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Tem certeza que deseja excluir o grupo "${group?.name}"?'),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: colorScheme.errorContainer.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.warning_outlined,
+                      color: colorScheme.error,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Text(
+                        'Esta ação não pode ser desfeita e apagará todo o histórico!',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                ref
+                    .read(editGroupViewModelProvider.notifier)
+                    .deleteGroup(groupId);
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: colorScheme.error,
+              ),
+              child: const Text('Excluir'),
+            ),
+          ],
+        ),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -47,6 +168,7 @@ class EditGroupView extends HookConsumerWidget {
           padding: const EdgeInsets.all(16.0),
           child: Form(
             key: formKey,
+            autovalidateMode: autovalidateMode.value,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -78,39 +200,24 @@ class EditGroupView extends HookConsumerWidget {
                         TextFormField(
                           controller: nameController,
                           textInputAction: TextInputAction.next,
+                          enabled: !isLoading,
+                          textCapitalization: TextCapitalization.sentences,
                           decoration: InputDecoration(
                             labelText: 'Nome do grupo',
-                            hintText: 'Digite o nome do grupo',
                             prefixIcon: Icon(
                               Icons.group_outlined,
                               color: colorScheme.onSurfaceVariant,
                             ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(
-                                color: colorScheme.outline,
-                              ),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(
-                                color: colorScheme.primary,
-                                width: 2,
-                              ),
                             ),
                             filled: true,
                             fillColor: colorScheme.surfaceContainerHighest
                                 .withValues(alpha: 0.3),
                           ),
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Por favor, digite o nome do grupo';
-                            }
-                            if (value.trim().length < 3) {
-                              return 'O nome deve ter pelo menos 3 caracteres';
-                            }
-                            return null;
-                          },
+                          validator: AppValidators.required(
+                            'Informe o nome do grupo',
+                          ),
                         ),
                         const SizedBox(height: 20),
 
@@ -118,9 +225,10 @@ class EditGroupView extends HookConsumerWidget {
                           controller: descriptionController,
                           textInputAction: TextInputAction.done,
                           maxLines: 4,
+                          enabled: !isLoading,
+                          textCapitalization: TextCapitalization.sentences,
                           decoration: InputDecoration(
                             labelText: 'Descrição (opcional)',
-                            hintText: 'Digite uma descrição para o grupo...',
                             prefixIcon: Padding(
                               padding: const EdgeInsets.only(bottom: 60),
                               child: Icon(
@@ -130,83 +238,11 @@ class EditGroupView extends HookConsumerWidget {
                             ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(
-                                color: colorScheme.outline,
-                              ),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(
-                                color: colorScheme.primary,
-                                width: 2,
-                              ),
                             ),
                             filled: true,
                             fillColor: colorScheme.surfaceContainerHighest
                                 .withValues(alpha: 0.3),
                           ),
-                          validator: (value) {
-                            if (value != null &&
-                                value.trim().isNotEmpty &&
-                                value.trim().length < 10) {
-                              return 'A descrição deve ter pelo menos 10 caracteres';
-                            }
-                            return null;
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.analytics_outlined,
-                              color: colorScheme.secondary,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Estatísticas do grupo',
-                              style: textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: colorScheme.secondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-
-                        _StatisticItem(
-                          icon: Icons.people_outline,
-                          label: 'Membros',
-                          value: '${currentGroup.memberCount}',
-                          colorScheme: colorScheme,
-                          textTheme: textTheme,
-                        ),
-                        const SizedBox(height: 12),
-                        _StatisticItem(
-                          icon: Icons.calendar_today_outlined,
-                          label: 'Criado em',
-                          value: _formatDate(currentGroup.createdAt),
-                          colorScheme: colorScheme,
-                          textTheme: textTheme,
-                        ),
-                        const SizedBox(height: 12),
-                        _StatisticItem(
-                          icon: Icons.receipt_long_outlined,
-                          label: 'Transações',
-                          value: '${currentGroup.transactionCount}',
-                          colorScheme: colorScheme,
-                          textTheme: textTheme,
                         ),
                       ],
                     ),
@@ -215,15 +251,7 @@ class EditGroupView extends HookConsumerWidget {
                 const SizedBox(height: 32),
 
                 ElevatedButton(
-                  onPressed: isLoading.value
-                      ? null
-                      : () => _saveChanges(
-                          context,
-                          formKey,
-                          nameController.text,
-                          descriptionController.text,
-                          isLoading,
-                        ),
+                  onPressed: isLoading ? null : saveChanges,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: colorScheme.primary,
                     foregroundColor: colorScheme.onPrimary,
@@ -232,7 +260,7 @@ class EditGroupView extends HookConsumerWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: isLoading.value
+                  child: isLoading
                       ? SizedBox(
                           height: 20,
                           width: 20,
@@ -251,7 +279,7 @@ class EditGroupView extends HookConsumerWidget {
                           ),
                         ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
 
                 Card(
                   color: colorScheme.errorContainer.withValues(alpha: 0.1),
@@ -263,15 +291,14 @@ class EditGroupView extends HookConsumerWidget {
                         Row(
                           children: [
                             Icon(
-                              Icons.warning_outlined,
+                              Icons.warning_amber_rounded,
                               color: colorScheme.error,
-                              size: 20,
                             ),
                             const SizedBox(width: 8),
                             Text(
                               'Zona de perigo',
                               style: textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.bold,
                                 color: colorScheme.error,
                               ),
                             ),
@@ -279,24 +306,24 @@ class EditGroupView extends HookConsumerWidget {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Excluir o grupo removerá permanentemente todos os dados, transações e histórico.',
+                          'Excluir o grupo removerá permanentemente todos os dados e histórico.',
                           style: textTheme.bodySmall?.copyWith(
                             color: colorScheme.onSurface.withValues(alpha: 0.8),
                           ),
                         ),
                         const SizedBox(height: 16),
-                        OutlinedButton.icon(
-                          onPressed: () => _showDeleteGroupDialog(
-                            context,
-                            currentGroup.name,
-                          ),
-                          icon: const Icon(Icons.delete_outline),
-                          label: const Text('Excluir grupo'),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: colorScheme.error,
-                            side: BorderSide(color: colorScheme.error),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: isLoading ? null : confirmDelete,
+                            icon: const Icon(Icons.delete_outline),
+                            label: const Text('Excluir grupo'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: colorScheme.error,
+                              side: BorderSide(color: colorScheme.error),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
                             ),
                           ),
                         ),
@@ -304,239 +331,12 @@ class EditGroupView extends HookConsumerWidget {
                     ),
                   ),
                 ),
+                const SizedBox(height: 32),
               ],
             ),
           ),
         ),
       ),
-    );
-  }
-
-  GroupEditData _getMockGroupData(String id) {
-    final groupsData = {
-      '1': GroupEditData(
-        id: '1',
-        name: 'Ap. 101',
-        description: 'Grupo para dividir as contas do apartamento 101.',
-        memberCount: 4,
-        createdAt: DateTime.now().subtract(const Duration(days: 60)),
-        transactionCount: 23,
-      ),
-      '2': GroupEditData(
-        id: '2',
-        name: 'Viagem FDS',
-        description: 'Organizando os gastos da nossa viagem de fim de semana.',
-        memberCount: 6,
-        createdAt: DateTime.now().subtract(const Duration(days: 15)),
-        transactionCount: 12,
-      ),
-      '3': GroupEditData(
-        id: '3',
-        name: 'Presente da Mãe',
-        description: '',
-        memberCount: 3,
-        createdAt: DateTime.now().subtract(const Duration(days: 7)),
-        transactionCount: 5,
-      ),
-      '4': GroupEditData(
-        id: '4',
-        name: 'Contas da Casa',
-        description: 'Controle das contas mensais da casa.',
-        memberCount: 2,
-        createdAt: DateTime.now().subtract(const Duration(days: 120)),
-        transactionCount: 45,
-      ),
-    };
-
-    return groupsData[id] ??
-        GroupEditData(
-          id: id,
-          name: 'Grupo Desconhecido',
-          description: '',
-          memberCount: 0,
-          createdAt: DateTime.now(),
-          transactionCount: 0,
-        );
-  }
-
-  String _formatDate(DateTime date) {
-    const months = [
-      'Jan',
-      'Fev',
-      'Mar',
-      'Abr',
-      'Mai',
-      'Jun',
-      'Jul',
-      'Ago',
-      'Set',
-      'Out',
-      'Nov',
-      'Dez',
-    ];
-    return '${date.day} ${months[date.month - 1]}, ${date.year}';
-  }
-
-  void _saveChanges(
-    BuildContext context,
-    GlobalKey<FormState> formKey,
-    String name,
-    String description,
-    ValueNotifier<bool> isLoading,
-  ) async {
-    if (formKey.currentState!.validate()) {
-      isLoading.value = true;
-
-      // TODO: Implementar salvamento real
-      await Future.delayed(const Duration(seconds: 2));
-
-      isLoading.value = false;
-
-      if (context.mounted) {
-        Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Grupo atualizado com sucesso!'),
-            backgroundColor: Theme.of(context).colorScheme.primary,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    }
-  }
-
-  void _showDeleteGroupDialog(BuildContext context, String groupName) {
-    showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Excluir grupo'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Tem certeza que deseja excluir o grupo "$groupName"?'),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Theme.of(
-                  context,
-                ).colorScheme.errorContainer.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.warning_outlined,
-                    color: Theme.of(context).colorScheme.error,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  const Expanded(
-                    child: Text(
-                      'Esta ação não pode ser desfeita!',
-                      style: TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              Navigator.of(context).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Grupo "$groupName" foi excluído'),
-                  backgroundColor: Theme.of(context).colorScheme.error,
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            },
-            style: TextButton.styleFrom(
-              foregroundColor: Theme.of(context).colorScheme.error,
-            ),
-            child: const Text('Excluir'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class GroupEditData {
-  final String id;
-  final String name;
-  final String description;
-  final int memberCount;
-  final DateTime createdAt;
-  final int transactionCount;
-
-  GroupEditData({
-    required this.id,
-    required this.name,
-    required this.description,
-    required this.memberCount,
-    required this.createdAt,
-    required this.transactionCount,
-  });
-}
-
-class _StatisticItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  final ColorScheme colorScheme;
-  final TextTheme textTheme;
-
-  const _StatisticItem({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.colorScheme,
-    required this.textTheme,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: colorScheme.secondary.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(
-            icon,
-            color: colorScheme.secondary,
-            size: 20,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            label,
-            style: textTheme.bodyMedium?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ),
-        Text(
-          value,
-          style: textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-            color: colorScheme.onSurface,
-          ),
-        ),
-      ],
     );
   }
 }
