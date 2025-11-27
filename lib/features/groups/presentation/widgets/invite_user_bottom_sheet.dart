@@ -1,17 +1,71 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:sincro/core/utils/validators.dart';
+import 'package:sincro/features/groups/presentation/viewmodels/invite_user/invite_user_state.dart';
+import 'package:sincro/features/groups/presentation/viewmodels/invite_user/invite_user_viewmodel.dart';
 
-class InviteUserBottomSheet extends HookWidget {
-  const InviteUserBottomSheet({super.key});
+class InviteUserBottomSheet extends HookConsumerWidget {
+  final String groupId;
+
+  const InviteUserBottomSheet({
+    required this.groupId,
+    super.key,
+  });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final emailController = useTextEditingController();
     final formKey = useMemoized(() => GlobalKey<FormState>());
+    final autovalidateMode = useState(AutovalidateMode.disabled);
 
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
+
+    final state = ref.watch(inviteUserViewModelProvider);
+    final isLoading = state.maybeWhen(
+      loading: () => true,
+      orElse: () => false,
+    );
+
+    ref.listen(inviteUserViewModelProvider, (_, next) {
+      next.whenOrNull(
+        success: () {
+          Navigator.of(context).pop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Convite enviado para ${emailController.text}'),
+              backgroundColor: colorScheme.primary,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        },
+        error: (message) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(message),
+              backgroundColor: colorScheme.error,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        },
+      );
+    });
+
+    void sendInvite() {
+      if (formKey.currentState!.validate()) {
+        FocusScope.of(context).unfocus();
+        ref
+            .read(inviteUserViewModelProvider.notifier)
+            .sendInvite(
+              groupId: groupId,
+              email: emailController.text.trim(),
+            );
+      } else {
+        autovalidateMode.value = AutovalidateMode.onUserInteraction;
+      }
+    }
 
     return Container(
       padding: EdgeInsets.only(
@@ -53,7 +107,7 @@ class InviteUserBottomSheet extends HookWidget {
           const SizedBox(height: 8),
 
           Text(
-            'Digite o email do usuário que deseja convidar para o grupo',
+            'Digite o email do usuário que deseja convidar',
             style: textTheme.bodyMedium?.copyWith(
               color: colorScheme.onSurfaceVariant,
             ),
@@ -63,6 +117,7 @@ class InviteUserBottomSheet extends HookWidget {
 
           Form(
             key: formKey,
+            autovalidateMode: autovalidateMode.value,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -70,6 +125,7 @@ class InviteUserBottomSheet extends HookWidget {
                   controller: emailController,
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.done,
+                  enabled: !isLoading,
                   decoration: InputDecoration(
                     labelText: 'Email do usuário',
                     hintText: 'exemplo@email.com',
@@ -95,23 +151,8 @@ class InviteUserBottomSheet extends HookWidget {
                       alpha: 0.3,
                     ),
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Por favor, digite um email';
-                    }
-                    final emailRegex = RegExp(
-                      r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                    );
-                    if (!emailRegex.hasMatch(value)) {
-                      return 'Por favor, digite um email válido';
-                    }
-                    return null;
-                  },
-                  onFieldSubmitted: (_) => _sendInvite(
-                    context,
-                    formKey,
-                    emailController.text,
-                  ),
+                  validator: AppValidators.email('Digite um e-mail válido'),
+                  onFieldSubmitted: (_) => sendInvite(),
                 ),
                 const SizedBox(height: 24),
 
@@ -119,7 +160,9 @@ class InviteUserBottomSheet extends HookWidget {
                   children: [
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: () => Navigator.of(context).pop(),
+                        onPressed: isLoading
+                            ? null
+                            : () => Navigator.of(context).pop(),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: colorScheme.onSurface,
                           side: BorderSide(color: colorScheme.outline),
@@ -140,11 +183,7 @@ class InviteUserBottomSheet extends HookWidget {
 
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: () => _sendInvite(
-                          context,
-                          formKey,
-                          emailController.text,
-                        ),
+                        onPressed: isLoading ? null : sendInvite,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: colorScheme.primary,
                           foregroundColor: colorScheme.onPrimary,
@@ -153,13 +192,24 @@ class InviteUserBottomSheet extends HookWidget {
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: Text(
-                          'Enviar convite',
-                          style: textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: colorScheme.onPrimary,
-                          ),
-                        ),
+                        child: isLoading
+                            ? SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation(
+                                    colorScheme.onPrimary,
+                                  ),
+                                ),
+                              )
+                            : Text(
+                                'Enviar convite',
+                                style: textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: colorScheme.onPrimary,
+                                ),
+                              ),
                       ),
                     ),
                   ],
@@ -170,26 +220,5 @@ class InviteUserBottomSheet extends HookWidget {
         ],
       ),
     );
-  }
-
-  void _sendInvite(
-    BuildContext context,
-    GlobalKey<FormState> formKey,
-    String email,
-  ) {
-    if (formKey.currentState!.validate()) {
-      // TODO: Implementar lógica de envio do convite
-      Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Convite enviado para $email'),
-          backgroundColor: Theme.of(context).colorScheme.primary,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-        ),
-      );
-    }
   }
 }

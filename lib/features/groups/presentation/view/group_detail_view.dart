@@ -195,7 +195,7 @@ class GroupDetailView extends HookConsumerWidget {
                 context: context,
                 isScrollControlled: true,
                 backgroundColor: Colors.transparent,
-                builder: (context) => const InviteUserBottomSheet(),
+                builder: (context) => InviteUserBottomSheet(groupId: groupId),
               ),
               icon: const Icon(Icons.person_add_outlined),
               label: const Text('Convidar'),
