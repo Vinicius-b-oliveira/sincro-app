@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:sincro/core/models/group_model.dart';
 import 'package:sincro/core/models/transaction_model.dart';
 import 'package:sincro/core/routing/app_routes.dart';
 import 'package:sincro/core/session/session_notifier.dart';
@@ -133,8 +134,9 @@ GoRouter goRouter(Ref ref) {
         name: AppRoutes.groupMembers,
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) {
-          final groupId = state.pathParameters['id'] ?? 'ID_PADRAO';
-          return ViewMembersView(groupId: groupId);
+          final groupId = state.pathParameters['id'] ?? '0';
+          final group = state.extra as GroupModel?;
+          return ViewMembersView(groupId: groupId, group: group);
         },
       ),
       GoRoute(

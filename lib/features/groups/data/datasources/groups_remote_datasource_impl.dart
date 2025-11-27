@@ -83,7 +83,8 @@ class GroupsRemoteDataSourceImpl implements GroupsRemoteDataSource {
     String groupId,
   ) {
     return _client.get(ApiRoutes.groupMembers(groupId)).map((response) {
-      final list = response.data as List;
+      final list = response.data['data'] as List;
+
       return list
           .map((e) => GroupMemberModel.fromJson(e as Map<String, dynamic>))
           .toList();

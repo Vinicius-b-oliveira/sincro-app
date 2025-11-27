@@ -220,8 +220,7 @@ class GroupDetailView extends HookConsumerWidget {
                 isScrollControlled: true,
                 backgroundColor: Colors.transparent,
                 builder: (context) => ManageGroupBottomSheet(
-                  groupName: group.name,
-                  groupId: groupId,
+                  group: group,
                 ),
               ),
               icon: const Icon(Icons.settings_outlined),

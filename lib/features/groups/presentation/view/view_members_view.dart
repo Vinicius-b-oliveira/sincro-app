@@ -1,11 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:sincro/core/models/group_model.dart';
+import 'package:sincro/core/session/session_notifier.dart';
+import 'package:sincro/core/session/session_state.dart';
+import 'package:sincro/features/groups/data/models/group_member_model.dart';
+import 'package:sincro/features/groups/presentation/viewmodels/group_members/group_members_viewmodel.dart';
 
 class ViewMembersView extends HookConsumerWidget {
   final String groupId;
+  final GroupModel? group;
 
   const ViewMembersView({
     required this.groupId,
+    this.group,
     super.key,
   });
 
@@ -15,9 +22,35 @@ class ViewMembersView extends HookConsumerWidget {
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
 
-    // TODO: Substituir por dados reais do provider/API
-    final members = _getMockMembers();
-    final groupName = _getGroupName(groupId);
+    final provider = groupMembersViewModelProvider(groupId);
+    final state = ref.watch(provider);
+    final viewModel = ref.read(provider.notifier);
+
+    final sessionState = ref.watch(sessionProvider);
+    final currentUser = sessionState.whenOrNull(authenticated: (u) => u);
+
+    final amIOwner = currentUser != null && group?.owner?.id == currentUser.id;
+
+    ref.listen(provider, (_, next) {
+      if (next.error != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(next.error!),
+            backgroundColor: colorScheme.error,
+          ),
+        );
+        viewModel.clearMessages();
+      }
+      if (next.successMessage != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(next.successMessage!),
+            backgroundColor: colorScheme.primary,
+          ),
+        );
+        viewModel.clearMessages();
+      }
+    });
 
     return Scaffold(
       appBar: AppBar(
@@ -31,150 +64,187 @@ class ViewMembersView extends HookConsumerWidget {
         foregroundColor: colorScheme.onSurface,
         elevation: 0,
       ),
-      body: Column(
-        children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            margin: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: colorScheme.primaryContainer,
-              borderRadius: BorderRadius.circular(12),
+      body: state.members.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, _) => Center(child: Text('Erro: $err')),
+        data: (members) {
+          final myMemberRecord = members.firstWhere(
+            (m) => m.id == currentUser?.id,
+            orElse: () => GroupMemberModel(
+              id: -1,
+              name: '',
+              email: '',
+              role: GroupRole.member,
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  groupName,
-                  style: textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: colorScheme.onPrimaryContainer,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${members.length} ${members.length == 1 ? 'membro' : 'membros'}',
-                  style: textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onPrimaryContainer.withValues(
-                      alpha: 0.8,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+          );
 
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: members.length,
-              itemBuilder: (context, index) {
-                final member = members[index];
-                return _MemberListItem(
-                  member: member,
-                  colorScheme: colorScheme,
-                  textTheme: textTheme,
-                  onTap: () => _showMemberActions(context, member),
-                );
-              },
+          final myRealRole = amIOwner ? GroupRole.owner : myMemberRecord.role;
+
+          return Column(
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                margin: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Membros',
+                      style: textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onPrimaryContainer,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${members.length} ${members.length == 1 ? 'membro' : 'membros'}',
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onPrimaryContainer.withValues(
+                          alpha: 0.8,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: RefreshIndicator(
+                  onRefresh: () => viewModel.loadMembers(),
+                  child: ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: members.length,
+                    itemBuilder: (context, index) {
+                      final member = members[index];
+                      final isProcessing =
+                          state.processingMemberId == member.id;
+
+                      final displayRole = (group?.owner?.id == member.id)
+                          ? GroupRole.owner
+                          : member.role;
+
+                      return _MemberListItem(
+                        member: member,
+                        displayRole: displayRole,
+                        colorScheme: colorScheme,
+                        textTheme: textTheme,
+                        isProcessing: isProcessing,
+                        onTap:
+                            _canManage(
+                              myRealRole,
+                              displayRole,
+                              member.id,
+                              currentUser?.id ?? -1,
+                            )
+                            ? () => _showMemberActions(
+                                context,
+                                member,
+                                myRealRole,
+                                viewModel,
+                              )
+                            : null,
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  bool _canManage(
+    GroupRole myRole,
+    GroupRole targetRole,
+    int targetId,
+    int myId,
+  ) {
+    if (targetId == myId) return false;
+    if (myRole == GroupRole.owner) return true;
+    if (myRole == GroupRole.admin && targetRole == GroupRole.member) {
+      return true;
+    }
+    return false;
+  }
+
+  void _showMemberActions(
+    BuildContext context,
+    GroupMemberModel member,
+    GroupRole myRole,
+    GroupMembersViewModel viewModel,
+  ) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _MemberActionsBottomSheet(
+        member: member,
+        myRole: myRole,
+        onToggleAdmin: () {
+          Navigator.of(context).pop();
+          viewModel.toggleAdminRole(member.id, member.role);
+        },
+        onRemove: () {
+          Navigator.of(context).pop();
+          _confirmRemoveMember(context, member, viewModel);
+        },
+      ),
+    );
+  }
+
+  void _confirmRemoveMember(
+    BuildContext context,
+    GroupMemberModel member,
+    GroupMembersViewModel viewModel,
+  ) {
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Remover membro'),
+        content: Text(
+          'Tem certeza que deseja remover ${member.name} do grupo?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              viewModel.removeMember(member.id);
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
             ),
+            child: const Text('Remover'),
           ),
         ],
       ),
     );
   }
-
-  List<GroupMember> _getMockMembers() {
-    return [
-      GroupMember(
-        id: '1',
-        name: 'João Silva',
-        email: 'joao.silva@email.com',
-        role: MemberRole.owner,
-        avatarUrl: null,
-        joinedAt: DateTime.now().subtract(const Duration(days: 30)),
-      ),
-      GroupMember(
-        id: '2',
-        name: 'Maria Santos',
-        email: 'maria.santos@email.com',
-        role: MemberRole.admin,
-        avatarUrl: null,
-        joinedAt: DateTime.now().subtract(const Duration(days: 15)),
-      ),
-      GroupMember(
-        id: '3',
-        name: 'Pedro Costa',
-        email: 'pedro.costa@email.com',
-        role: MemberRole.member,
-        avatarUrl: null,
-        joinedAt: DateTime.now().subtract(const Duration(days: 7)),
-      ),
-      GroupMember(
-        id: '4',
-        name: 'Ana Oliveira',
-        email: 'ana.oliveira@email.com',
-        role: MemberRole.member,
-        avatarUrl: null,
-        joinedAt: DateTime.now().subtract(const Duration(days: 3)),
-      ),
-    ];
-  }
-
-  String _getGroupName(String id) {
-    final groupNames = {
-      '1': 'Ap. 101',
-      '2': 'Viagem FDS',
-      '3': 'Presente da Mãe',
-      '4': 'Contas da Casa',
-    };
-    return groupNames[id] ?? 'Grupo Desconhecido';
-  }
-
-  void _showMemberActions(BuildContext context, GroupMember member) {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => _MemberActionsBottomSheet(member: member),
-    );
-  }
-}
-
-class GroupMember {
-  final String id;
-  final String name;
-  final String email;
-  final MemberRole role;
-  final String? avatarUrl;
-  final DateTime joinedAt;
-
-  GroupMember({
-    required this.id,
-    required this.name,
-    required this.email,
-    required this.role,
-    this.avatarUrl,
-    required this.joinedAt,
-  });
-}
-
-enum MemberRole {
-  owner,
-  admin,
-  member,
 }
 
 class _MemberListItem extends StatelessWidget {
-  final GroupMember member;
+  final GroupMemberModel member;
+  final GroupRole displayRole;
   final ColorScheme colorScheme;
   final TextTheme textTheme;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
+  final bool isProcessing;
 
   const _MemberListItem({
     required this.member,
+    required this.displayRole,
     required this.colorScheme,
     required this.textTheme,
-    required this.onTap,
+    this.onTap,
+    this.isProcessing = false,
   });
 
   @override
@@ -185,7 +255,7 @@ class _MemberListItem extends StatelessWidget {
         leading: CircleAvatar(
           backgroundColor: colorScheme.primary,
           child: Text(
-            member.name[0].toUpperCase(),
+            member.name.isNotEmpty ? member.name[0].toUpperCase() : '?',
             style: TextStyle(
               color: colorScheme.onPrimary,
               fontWeight: FontWeight.bold,
@@ -198,69 +268,51 @@ class _MemberListItem extends StatelessWidget {
             fontWeight: FontWeight.w600,
           ),
         ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              member.email,
-              style: textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              'Entrou ${_formatJoinDate(member.joinedAt)}',
-              style: textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-              ),
-            ),
-          ],
+        subtitle: Text(
+          member.email,
+          style: textTheme.bodySmall?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+          ),
         ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _RoleBadge(role: member.role, colorScheme: colorScheme),
-            const SizedBox(width: 8),
-            Icon(
-              Icons.more_vert,
-              color: colorScheme.onSurfaceVariant,
-            ),
+            if (isProcessing)
+              const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            else ...[
+              _RoleBadge(role: displayRole, colorScheme: colorScheme),
+              if (onTap != null) ...[
+                const SizedBox(width: 8),
+                Icon(
+                  Icons.more_vert,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ],
+            ],
           ],
         ),
         onTap: onTap,
       ),
     );
   }
-
-  String _formatJoinDate(DateTime date) {
-    final now = DateTime.now();
-    final difference = now.difference(date);
-
-    if (difference.inDays > 0) {
-      return 'há ${difference.inDays} ${difference.inDays == 1 ? 'dia' : 'dias'}';
-    } else if (difference.inHours > 0) {
-      return 'há ${difference.inHours} ${difference.inHours == 1 ? 'hora' : 'horas'}';
-    } else {
-      return 'há poucos minutos';
-    }
-  }
 }
 
 class _RoleBadge extends StatelessWidget {
-  final MemberRole role;
+  final GroupRole role;
   final ColorScheme colorScheme;
 
-  const _RoleBadge({
-    required this.role,
-    required this.colorScheme,
-  });
+  const _RoleBadge({required this.role, required this.colorScheme});
 
   @override
   Widget build(BuildContext context) {
     final (text, color) = switch (role) {
-      MemberRole.owner => ('Dono', colorScheme.primary),
-      MemberRole.admin => ('Admin', colorScheme.secondary),
-      MemberRole.member => ('Membro', colorScheme.outline),
+      GroupRole.owner => ('Dono', colorScheme.primary),
+      GroupRole.admin => ('Admin', colorScheme.secondary),
+      GroupRole.member => ('Membro', colorScheme.outline),
     };
 
     return Container(
@@ -282,10 +334,16 @@ class _RoleBadge extends StatelessWidget {
 }
 
 class _MemberActionsBottomSheet extends StatelessWidget {
-  final GroupMember member;
+  final GroupMemberModel member;
+  final GroupRole myRole;
+  final VoidCallback onToggleAdmin;
+  final VoidCallback onRemove;
 
   const _MemberActionsBottomSheet({
     required this.member,
+    required this.myRole,
+    required this.onToggleAdmin,
+    required this.onRemove,
   });
 
   @override
@@ -293,6 +351,8 @@ class _MemberActionsBottomSheet extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
+
+    final canChangeRole = myRole == GroupRole.owner;
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -312,136 +372,32 @@ class _MemberActionsBottomSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-
-          Row(
-            children: [
-              CircleAvatar(
-                backgroundColor: colorScheme.primary,
-                child: Text(
-                  member.name[0].toUpperCase(),
-                  style: TextStyle(
-                    color: colorScheme.onPrimary,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      member.name,
-                      style: textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    Text(
-                      member.email,
-                      style: textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          Text(
+            'Gerenciar ${member.name}',
+            style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 24),
 
-          if (member.role != MemberRole.owner) ...[
+          if (canChangeRole) ...[
             _ActionButton(
               icon: Icons.admin_panel_settings_outlined,
-              title: member.role == MemberRole.admin
+              title: member.role == GroupRole.admin
                   ? 'Remover como admin'
                   : 'Tornar admin',
-              onTap: () => _toggleAdmin(context),
+              onTap: onToggleAdmin,
               colorScheme: colorScheme,
               textTheme: textTheme,
             ),
             const SizedBox(height: 12),
-            _ActionButton(
-              icon: Icons.person_remove_outlined,
-              title: 'Remover do grupo',
-              isDestructive: true,
-              onTap: () => _removeMember(context),
-              colorScheme: colorScheme,
-              textTheme: textTheme,
-            ),
-          ] else ...[
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: colorScheme.primaryContainer.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.info_outline,
-                    color: colorScheme.primary,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'Este é o dono do grupo e não pode ser removido.',
-                      style: textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onPrimaryContainer,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
           ],
-        ],
-      ),
-    );
-  }
 
-  void _toggleAdmin(BuildContext context) {
-    Navigator.of(context).pop();
-    final action = member.role == MemberRole.admin
-        ? 'removido como'
-        : 'promovido a';
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${member.name} foi $action administrador'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
-  void _removeMember(BuildContext context) {
-    Navigator.of(context).pop();
-    showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Remover membro'),
-        content: Text(
-          'Tem certeza que deseja remover ${member.name} do grupo?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('${member.name} foi removido do grupo'),
-                  backgroundColor: Theme.of(context).colorScheme.error,
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            },
-            style: TextButton.styleFrom(
-              foregroundColor: Theme.of(context).colorScheme.error,
-            ),
-            child: const Text('Remover'),
+          _ActionButton(
+            icon: Icons.person_remove_outlined,
+            title: 'Remover do grupo',
+            isDestructive: true,
+            onTap: onRemove,
+            colorScheme: colorScheme,
+            textTheme: textTheme,
           ),
         ],
       ),

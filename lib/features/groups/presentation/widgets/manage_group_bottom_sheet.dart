@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:go_router/go_router.dart';
+import 'package:sincro/core/models/group_model.dart';
 import 'package:sincro/core/routing/app_routes.dart';
 
 class ManageGroupBottomSheet extends HookWidget {
-  final String groupName;
-  final String groupId;
+  final GroupModel group;
 
   const ManageGroupBottomSheet({
-    required this.groupName,
-    required this.groupId,
+    required this.group,
     super.key,
   });
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -53,7 +53,7 @@ class ManageGroupBottomSheet extends HookWidget {
           const SizedBox(height: 8),
 
           Text(
-            groupName,
+            group.name,
             style: textTheme.titleMedium?.copyWith(
               color: colorScheme.primary,
               fontWeight: FontWeight.w600,
@@ -71,6 +71,7 @@ class ManageGroupBottomSheet extends HookWidget {
             colorScheme: colorScheme,
             textTheme: textTheme,
           ),
+
           const SizedBox(height: 16),
 
           _buildOptionButton(
@@ -200,55 +201,29 @@ class ManageGroupBottomSheet extends HookWidget {
 
   void _handleViewMembers(BuildContext context) {
     Navigator.of(context).pop();
-    context.push(AppRoutes.groupMembers.replaceAll(':id', groupId));
+    context.pushNamed(
+      AppRoutes.groupMembers,
+      pathParameters: {'id': group.id.toString()},
+      extra: group,
+    );
   }
 
   void _handleEditGroup(BuildContext context) {
     Navigator.of(context).pop();
-    context.push(AppRoutes.groupEdit.replaceAll(':id', groupId));
+    context.push(AppRoutes.groupEdit.replaceAll(':id', group.id.toString()));
   }
 
   void _handleSettings(BuildContext context) {
     Navigator.of(context).pop();
-    context.push(AppRoutes.groupSettings.replaceAll(':id', groupId));
+    context.push(
+      AppRoutes.groupSettings.replaceAll(':id', group.id.toString()),
+    );
   }
 
   void _handleLeaveGroup(BuildContext context) {
     Navigator.of(context).pop();
-
-    showDialog<void>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Sair do grupo'),
-          content: Text('Tem certeza que deseja sair do grupo "$groupName"?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancelar'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Você saiu do grupo "$groupName"'),
-                    backgroundColor: Theme.of(context).colorScheme.error,
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                );
-              },
-              style: TextButton.styleFrom(
-                foregroundColor: Theme.of(context).colorScheme.error,
-              ),
-              child: const Text('Sair'),
-            ),
-          ],
-        );
-      },
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Você saiu do grupo "${group.name}"')),
     );
   }
 }
