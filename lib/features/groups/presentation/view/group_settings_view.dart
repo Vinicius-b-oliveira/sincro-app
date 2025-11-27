@@ -22,6 +22,29 @@ class GroupSettingsView extends HookConsumerWidget {
     final state = ref.watch(provider);
     final viewModel = ref.read(provider.notifier);
 
+    ref.listen(provider, (previous, next) {
+      next.whenOrNull(
+        success: (message) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(message),
+              backgroundColor: colorScheme.primary,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        },
+        error: (message) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(message),
+              backgroundColor: colorScheme.error,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        },
+      );
+    });
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -135,11 +158,7 @@ class GroupSettingsView extends HookConsumerWidget {
                   title: 'Exportar dados',
                   description: 'Baixar todas as transações e dados do grupo',
                   icon: Icons.download_outlined,
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Em breve')),
-                    );
-                  },
+                  onTap: () => viewModel.exportData(),
                   colorScheme: colorScheme,
                   textTheme: textTheme,
                 ),
@@ -149,11 +168,7 @@ class GroupSettingsView extends HookConsumerWidget {
                   title: 'Limpar histórico',
                   description: 'Remover todas as transações (mantém membros)',
                   icon: Icons.clear_all_outlined,
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Em breve')),
-                    );
-                  },
+                  onTap: () => _showClearHistoryDialog(context, viewModel),
                   colorScheme: colorScheme,
                   textTheme: textTheme,
                   isDestructive: true,
@@ -162,6 +177,46 @@ class GroupSettingsView extends HookConsumerWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  void _showClearHistoryDialog(
+    BuildContext context,
+    GroupSettingsViewModel viewModel,
+  ) {
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Limpar histórico'),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Esta ação irá remover todas as transações do grupo.'),
+            SizedBox(height: 16),
+            Text(
+              'Os membros permanecerão no grupo, mas todo o histórico financeiro será perdido.',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              viewModel.clearHistory();
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
+            child: const Text('Limpar'),
+          ),
+        ],
       ),
     );
   }
