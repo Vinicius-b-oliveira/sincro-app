@@ -30,6 +30,9 @@ class ApiRoutes {
   static const String balance = '/balance';
   static const String summary = '/analytics/summary';
 
+  static String groupExport(String id) => '$groups/$id/export';
+  static String groupClearHistory(String id) => '$groups/$id/history';
+
   static const Set<String> publicEndpoints = {
     login,
     register,

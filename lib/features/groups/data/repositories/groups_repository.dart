@@ -61,4 +61,11 @@ abstract class GroupsRepository {
   TaskEither<AppFailure, void> acceptInvite(int invitationId);
 
   TaskEither<AppFailure, void> declineInvite(int invitationId);
+
+  TaskEither<AppFailure, void> clearHistory(String groupId);
+
+  TaskEither<AppFailure, void> exportGroup({
+    required String groupId,
+    required String savePath,
+  });
 }

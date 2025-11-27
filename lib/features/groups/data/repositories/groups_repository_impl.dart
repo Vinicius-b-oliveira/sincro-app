@@ -120,4 +120,17 @@ class GroupsRepositoryImpl implements GroupsRepository {
   TaskEither<AppFailure, void> declineInvite(int invitationId) {
     return _dataSource.declineInvite(invitationId);
   }
+
+  @override
+  TaskEither<AppFailure, void> clearHistory(String groupId) {
+    return _dataSource.clearHistory(groupId);
+  }
+
+  @override
+  TaskEither<AppFailure, void> exportGroup({
+    required String groupId,
+    required String savePath,
+  }) {
+    return _dataSource.exportGroup(groupId: groupId, savePath: savePath);
+  }
 }

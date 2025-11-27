@@ -177,4 +177,22 @@ class GroupsRemoteDataSourceImpl implements GroupsRemoteDataSource {
   TaskEither<AppFailure, void> declineInvite(int invitationId) {
     return _client.post(ApiRoutes.invitationDecline(invitationId)).map((_) {});
   }
+
+  @override
+  TaskEither<AppFailure, void> clearHistory(String groupId) {
+    return _client.delete(ApiRoutes.groupClearHistory(groupId)).map((_) {});
+  }
+
+  @override
+  TaskEither<AppFailure, void> exportGroup({
+    required String groupId,
+    required String savePath,
+  }) {
+    return _client
+        .download(
+          ApiRoutes.groupExport(groupId),
+          savePath,
+        )
+        .map((_) {});
+  }
 }

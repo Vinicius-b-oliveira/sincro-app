@@ -64,4 +64,21 @@ class DioClient {
       _handleError,
     );
   }
+
+  TaskEither<AppFailure, Response> download(
+    String urlPath,
+    String savePath, {
+    Map<String, dynamic>? queryParameters,
+    dynamic data,
+  }) {
+    return TaskEither.tryCatch(
+      () => _dio.download(
+        urlPath,
+        savePath,
+        queryParameters: queryParameters,
+        data: data,
+      ),
+      _handleError,
+    );
+  }
 }
