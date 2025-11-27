@@ -63,12 +63,17 @@ class GroupsRemoteDataSourceImpl implements GroupsRemoteDataSource {
   @override
   TaskEither<AppFailure, GroupModel> updateGroup({
     required String id,
-    required String name,
+    String? name,
     String? description,
+    bool? membersCanAddTransactions,
+    bool? membersCanInvite,
   }) {
-    final data = {
-      'name': name,
+    final data = <String, dynamic>{
+      if (name != null) 'name': name,
       if (description != null) 'description': description,
+      if (membersCanAddTransactions != null)
+        'members_can_add_transactions': membersCanAddTransactions,
+      if (membersCanInvite != null) 'members_can_invite': membersCanInvite,
     };
 
     return _client.put(ApiRoutes.groupById(id), data: data).map((response) {

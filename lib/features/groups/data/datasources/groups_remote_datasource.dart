@@ -22,8 +22,10 @@ abstract class GroupsRemoteDataSource {
 
   TaskEither<AppFailure, GroupModel> updateGroup({
     required String id,
-    required String name,
+    String? name,
     String? description,
+    bool? membersCanAddTransactions,
+    bool? membersCanInvite,
   });
 
   TaskEither<AppFailure, void> deleteGroup(String id);

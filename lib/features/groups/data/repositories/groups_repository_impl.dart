@@ -42,13 +42,17 @@ class GroupsRepositoryImpl implements GroupsRepository {
   @override
   TaskEither<AppFailure, GroupModel> updateGroup({
     required String id,
-    required String name,
+    String? name,
     String? description,
+    bool? membersCanAddTransactions,
+    bool? membersCanInvite,
   }) {
     return _dataSource.updateGroup(
       id: id,
       name: name,
       description: description,
+      membersCanAddTransactions: membersCanAddTransactions,
+      membersCanInvite: membersCanInvite,
     );
   }
 
