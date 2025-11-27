@@ -132,7 +132,9 @@ class GroupsRemoteDataSourceImpl implements GroupsRemoteDataSource {
   @override
   TaskEither<AppFailure, List<InvitationModel>> getPendingInvites() {
     return _client.get(ApiRoutes.invitationsPending).map((response) {
-      final list = (response.data['data'] ?? response.data) as List;
+      final list = (response.data is Map && response.data.containsKey('data'))
+          ? response.data['data'] as List
+          : response.data as List;
 
       return list
           .map((e) => InvitationModel.fromJson(e as Map<String, dynamic>))

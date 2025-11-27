@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:sincro/features/groups/data/models/invitation_model.dart';
+import 'package:sincro/features/groups/presentation/viewmodels/group_invites/group_invites_viewmodel.dart';
 
 class GroupInvitesView extends HookConsumerWidget {
   const GroupInvitesView({super.key});
@@ -10,8 +12,29 @@ class GroupInvitesView extends HookConsumerWidget {
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
 
-    // TODO: Substituir por dados reais do provider/API
-    final invites = _getMockInvites();
+    final state = ref.watch(groupInvitesViewModelProvider);
+    final viewModel = ref.read(groupInvitesViewModelProvider.notifier);
+
+    ref.listen(groupInvitesViewModelProvider, (_, next) {
+      if (next.error != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(next.error!),
+            backgroundColor: colorScheme.error,
+          ),
+        );
+        viewModel.clearMessages();
+      }
+      if (next.successMessage != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(next.successMessage!),
+            backgroundColor: colorScheme.primary,
+          ),
+        );
+        viewModel.clearMessages();
+      }
+    });
 
     return Scaffold(
       appBar: AppBar(
@@ -25,9 +48,17 @@ class GroupInvitesView extends HookConsumerWidget {
         foregroundColor: colorScheme.onSurface,
         elevation: 0,
       ),
-      body: invites.isEmpty
-          ? _buildEmptyState(context, colorScheme, textTheme)
-          : Column(
+      body: state.invites.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, _) => Center(child: Text('Erro: $err')),
+        data: (invites) {
+          if (invites.isEmpty) {
+            return _buildEmptyState(context, colorScheme, textTheme);
+          }
+
+          return RefreshIndicator(
+            onRefresh: () => viewModel.loadInvites(),
+            child: Column(
               children: [
                 Container(
                   width: double.infinity,
@@ -76,17 +107,22 @@ class GroupInvitesView extends HookConsumerWidget {
                     ],
                   ),
                 ),
-
                 Expanded(
                   child: ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     itemCount: invites.length,
                     itemBuilder: (context, index) {
                       final invite = invites[index];
+                      final isProcessing =
+                          state.processingInviteId == invite.id;
+
                       return _InviteCard(
                         invite: invite,
-                        onAccept: () => _acceptInvite(context, invite),
-                        onDecline: () => _declineInvite(context, invite),
+                        isProcessing: isProcessing,
+                        onAccept: () =>
+                            _confirmAccept(context, invite, viewModel),
+                        onDecline: () =>
+                            _confirmDecline(context, invite, viewModel),
                         colorScheme: colorScheme,
                         textTheme: textTheme,
                       );
@@ -95,6 +131,9 @@ class GroupInvitesView extends HookConsumerWidget {
                 ),
               ],
             ),
+          );
+        },
+      ),
     );
   }
 
@@ -159,46 +198,16 @@ class GroupInvitesView extends HookConsumerWidget {
     );
   }
 
-  List<GroupInvite> _getMockInvites() {
-    return [
-      GroupInvite(
-        id: '1',
-        groupName: 'Apartamento 205',
-        groupDescription: 'Divisão das contas do apartamento 205.',
-        inviterName: 'João Silva',
-        inviterEmail: 'joao.silva@email.com',
-        invitedAt: DateTime.now().subtract(const Duration(hours: 2)),
-        memberCount: 3,
-      ),
-      GroupInvite(
-        id: '2',
-        groupName: 'Viagem Campos do Jordão',
-        groupDescription:
-            'Organização dos gastos da nossa viagem para Campos do Jordão no fim de semana.',
-        inviterName: 'Maria Santos',
-        inviterEmail: 'maria.santos@email.com',
-        invitedAt: DateTime.now().subtract(const Duration(days: 1)),
-        memberCount: 5,
-      ),
-      GroupInvite(
-        id: '3',
-        groupName: 'Presente Casamento Ana',
-        groupDescription: '',
-        inviterName: 'Pedro Costa',
-        inviterEmail: 'pedro.costa@email.com',
-        invitedAt: DateTime.now().subtract(const Duration(days: 3)),
-        memberCount: 8,
-      ),
-    ];
-  }
-
-  void _acceptInvite(BuildContext context, GroupInvite invite) {
-    // TODO: Implementar aceitação do convite
+  void _confirmAccept(
+    BuildContext context,
+    InvitationModel invite,
+    GroupInvitesViewModel viewModel,
+  ) {
     showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Aceitar convite'),
-        content: Text('Deseja entrar no grupo "${invite.groupName}"?'),
+        content: Text('Deseja entrar no grupo "${invite.group.name}"?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -207,13 +216,7 @@ class GroupInvitesView extends HookConsumerWidget {
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Você entrou no grupo "${invite.groupName}"!'),
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
+              viewModel.acceptInvite(invite.id, invite.group.name);
             },
             style: TextButton.styleFrom(
               foregroundColor: Theme.of(context).colorScheme.primary,
@@ -225,14 +228,17 @@ class GroupInvitesView extends HookConsumerWidget {
     );
   }
 
-  void _declineInvite(BuildContext context, GroupInvite invite) {
-    // TODO: Implementar recusa do convite
+  void _confirmDecline(
+    BuildContext context,
+    InvitationModel invite,
+    GroupInvitesViewModel viewModel,
+  ) {
     showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Recusar convite'),
         content: Text(
-          'Tem certeza que deseja recusar o convite para "${invite.groupName}"?',
+          'Tem certeza que deseja recusar o convite para "${invite.group.name}"?',
         ),
         actions: [
           TextButton(
@@ -242,13 +248,7 @@ class GroupInvitesView extends HookConsumerWidget {
           TextButton(
             onPressed: () {
               Navigator.of(context).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Convite para "${invite.groupName}" recusado'),
-                  backgroundColor: Theme.of(context).colorScheme.error,
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
+              viewModel.declineInvite(invite.id, invite.group.name);
             },
             style: TextButton.styleFrom(
               foregroundColor: Theme.of(context).colorScheme.error,
@@ -261,30 +261,11 @@ class GroupInvitesView extends HookConsumerWidget {
   }
 }
 
-class GroupInvite {
-  final String id;
-  final String groupName;
-  final String groupDescription;
-  final String inviterName;
-  final String inviterEmail;
-  final DateTime invitedAt;
-  final int memberCount;
-
-  GroupInvite({
-    required this.id,
-    required this.groupName,
-    required this.groupDescription,
-    required this.inviterName,
-    required this.inviterEmail,
-    required this.invitedAt,
-    required this.memberCount,
-  });
-}
-
 class _InviteCard extends StatelessWidget {
-  final GroupInvite invite;
+  final InvitationModel invite;
   final VoidCallback onAccept;
   final VoidCallback onDecline;
+  final bool isProcessing;
   final ColorScheme colorScheme;
   final TextTheme textTheme;
 
@@ -292,6 +273,7 @@ class _InviteCard extends StatelessWidget {
     required this.invite,
     required this.onAccept,
     required this.onDecline,
+    required this.isProcessing,
     required this.colorScheme,
     required this.textTheme,
   });
@@ -310,7 +292,9 @@ class _InviteCard extends StatelessWidget {
                 CircleAvatar(
                   backgroundColor: colorScheme.primary,
                   child: Text(
-                    invite.inviterName[0].toUpperCase(),
+                    invite.inviter.name.isNotEmpty
+                        ? invite.inviter.name[0].toUpperCase()
+                        : '?',
                     style: TextStyle(
                       color: colorScheme.onPrimary,
                       fontWeight: FontWeight.bold,
@@ -323,7 +307,7 @@ class _InviteCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        invite.inviterName,
+                        invite.inviter.name,
                         style: textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
@@ -338,7 +322,7 @@ class _InviteCard extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  _formatTime(invite.invitedAt),
+                  _formatTime(invite.createdAt),
                   style: textTheme.bodySmall?.copyWith(
                     color: colorScheme.onSurfaceVariant,
                   ),
@@ -368,7 +352,7 @@ class _InviteCard extends StatelessWidget {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          invite.groupName,
+                          invite.group.name,
                           style: textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: colorScheme.primary,
@@ -377,10 +361,11 @@ class _InviteCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  if (invite.groupDescription.isNotEmpty) ...[
+                  if (invite.group.description != null &&
+                      invite.group.description!.isNotEmpty) ...[
                     const SizedBox(height: 8),
                     Text(
-                      invite.groupDescription,
+                      invite.group.description!,
                       style: textTheme.bodySmall?.copyWith(
                         color: colorScheme.onSurfaceVariant,
                       ),
@@ -396,7 +381,7 @@ class _InviteCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        '${invite.memberCount} ${invite.memberCount == 1 ? 'membro' : 'membros'}',
+                        '${invite.group.membersCount} membros',
                         style: textTheme.bodySmall?.copyWith(
                           color: colorScheme.onSurfaceVariant,
                         ),
@@ -408,50 +393,53 @@ class _InviteCard extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: onDecline,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: colorScheme.error,
-                      side: BorderSide(color: colorScheme.error),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+            if (isProcessing)
+              const Center(child: CircularProgressIndicator())
+            else
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: onDecline,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: colorScheme.error,
+                        side: BorderSide(color: colorScheme.error),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
-                    ),
-                    child: Text(
-                      'Recusar',
-                      style: textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: onAccept,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: colorScheme.primary,
-                      foregroundColor: colorScheme.onPrimary,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: Text(
-                      'Aceitar',
-                      style: textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: colorScheme.onPrimary,
+                      child: Text(
+                        'Recusar',
+                        style: textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
-            ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: onAccept,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: colorScheme.primary,
+                        foregroundColor: colorScheme.onPrimary,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: Text(
+                        'Aceitar',
+                        style: textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: colorScheme.onPrimary,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
           ],
         ),
       ),
