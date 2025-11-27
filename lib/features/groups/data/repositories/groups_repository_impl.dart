@@ -5,6 +5,7 @@ import 'package:sincro/core/models/paginated_response.dart';
 import 'package:sincro/core/models/transaction_model.dart';
 import 'package:sincro/features/groups/data/datasources/groups_remote_datasource.dart';
 import 'package:sincro/features/groups/data/models/group_member_model.dart';
+import 'package:sincro/features/groups/data/models/invitation_model.dart';
 import 'package:sincro/features/groups/data/repositories/groups_repository.dart';
 
 class GroupsRepositoryImpl implements GroupsRepository {
@@ -73,5 +74,28 @@ class GroupsRepositoryImpl implements GroupsRepository {
       userId: userId,
       role: role.name,
     );
+  }
+
+  @override
+  TaskEither<AppFailure, void> sendInvite({
+    required String groupId,
+    required String email,
+  }) {
+    return _dataSource.sendInvite(groupId: groupId, email: email);
+  }
+
+  @override
+  TaskEither<AppFailure, List<InvitationModel>> getPendingInvites() {
+    return _dataSource.getPendingInvites();
+  }
+
+  @override
+  TaskEither<AppFailure, void> acceptInvite(int invitationId) {
+    return _dataSource.acceptInvite(invitationId);
+  }
+
+  @override
+  TaskEither<AppFailure, void> declineInvite(int invitationId) {
+    return _dataSource.declineInvite(invitationId);
   }
 }

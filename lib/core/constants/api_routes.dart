@@ -19,7 +19,11 @@ class ApiRoutes {
   static String groupMemberAction(String groupId, int userId) =>
       '$groups/$groupId/members/$userId';
 
-  static String groupInvites(String id) => '$groups/$id/invitations';
+  static const String invitationsPending = '/invitations/pending';
+  static String invitationAccept(int id) => '/invitations/$id/accept';
+  static String invitationDecline(int id) => '/invitations/$id/decline';
+
+  static String groupInvites(String id) => '/groups/$id/invitations';
 
   static String groupTransactions(String id) => '$groups/$id/transactions';
 

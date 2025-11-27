@@ -4,6 +4,7 @@ import 'package:sincro/core/models/group_model.dart';
 import 'package:sincro/core/models/paginated_response.dart';
 import 'package:sincro/core/models/transaction_model.dart';
 import 'package:sincro/features/groups/data/models/group_member_model.dart';
+import 'package:sincro/features/groups/data/models/invitation_model.dart';
 
 abstract class GroupsRemoteDataSource {
   TaskEither<AppFailure, PaginatedResponse<GroupModel>> getGroups({
@@ -39,4 +40,15 @@ abstract class GroupsRemoteDataSource {
     required int userId,
     required String role,
   });
+
+  TaskEither<AppFailure, void> sendInvite({
+    required String groupId,
+    required String email,
+  });
+
+  TaskEither<AppFailure, List<InvitationModel>> getPendingInvites();
+
+  TaskEither<AppFailure, void> acceptInvite(int invitationId);
+
+  TaskEither<AppFailure, void> declineInvite(int invitationId);
 }

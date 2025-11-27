@@ -7,6 +7,7 @@ import 'package:sincro/core/models/transaction_model.dart';
 import 'package:sincro/core/network/dio_client.dart';
 import 'package:sincro/features/groups/data/datasources/groups_remote_datasource.dart';
 import 'package:sincro/features/groups/data/models/group_member_model.dart';
+import 'package:sincro/features/groups/data/models/invitation_model.dart';
 
 class GroupsRemoteDataSourceImpl implements GroupsRemoteDataSource {
   final DioClient _client;
@@ -113,5 +114,39 @@ class GroupsRemoteDataSourceImpl implements GroupsRemoteDataSource {
           data: {'role': role},
         )
         .map((_) {});
+  }
+
+  @override
+  TaskEither<AppFailure, void> sendInvite({
+    required String groupId,
+    required String email,
+  }) {
+    return _client
+        .post(
+          ApiRoutes.groupInvites(groupId),
+          data: {'email': email},
+        )
+        .map((_) {});
+  }
+
+  @override
+  TaskEither<AppFailure, List<InvitationModel>> getPendingInvites() {
+    return _client.get(ApiRoutes.invitationsPending).map((response) {
+      final list = (response.data['data'] ?? response.data) as List;
+
+      return list
+          .map((e) => InvitationModel.fromJson(e as Map<String, dynamic>))
+          .toList();
+    });
+  }
+
+  @override
+  TaskEither<AppFailure, void> acceptInvite(int invitationId) {
+    return _client.post(ApiRoutes.invitationAccept(invitationId)).map((_) {});
+  }
+
+  @override
+  TaskEither<AppFailure, void> declineInvite(int invitationId) {
+    return _client.post(ApiRoutes.invitationDecline(invitationId)).map((_) {});
   }
 }
