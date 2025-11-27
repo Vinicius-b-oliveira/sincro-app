@@ -30,6 +30,14 @@ abstract class GroupsRepository {
     String groupId,
   );
 
+  TaskEither<AppFailure, GroupModel> updateGroup({
+    required String id,
+    required String name,
+    String? description,
+  });
+
+  TaskEither<AppFailure, void> deleteGroup(String id);
+
   TaskEither<AppFailure, void> removeMember({
     required String groupId,
     required int userId,

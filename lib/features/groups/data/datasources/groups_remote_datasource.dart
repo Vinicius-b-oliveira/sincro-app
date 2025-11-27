@@ -20,6 +20,14 @@ abstract class GroupsRemoteDataSource {
 
   TaskEither<AppFailure, GroupModel> getGroup(String id);
 
+  TaskEither<AppFailure, GroupModel> updateGroup({
+    required String id,
+    required String name,
+    String? description,
+  });
+
+  TaskEither<AppFailure, void> deleteGroup(String id);
+
   TaskEither<AppFailure, PaginatedResponse<TransactionModel>>
   getGroupTransactions({
     required String groupId,

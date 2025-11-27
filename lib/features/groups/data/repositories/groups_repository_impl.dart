@@ -40,6 +40,24 @@ class GroupsRepositoryImpl implements GroupsRepository {
   }
 
   @override
+  TaskEither<AppFailure, GroupModel> updateGroup({
+    required String id,
+    required String name,
+    String? description,
+  }) {
+    return _dataSource.updateGroup(
+      id: id,
+      name: name,
+      description: description,
+    );
+  }
+
+  @override
+  TaskEither<AppFailure, void> deleteGroup(String id) {
+    return _dataSource.deleteGroup(id);
+  }
+
+  @override
   TaskEither<AppFailure, PaginatedResponse<TransactionModel>>
   getGroupTransactions({
     required String groupId,

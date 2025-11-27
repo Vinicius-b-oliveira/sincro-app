@@ -61,6 +61,27 @@ class GroupsRemoteDataSourceImpl implements GroupsRemoteDataSource {
   }
 
   @override
+  TaskEither<AppFailure, GroupModel> updateGroup({
+    required String id,
+    required String name,
+    String? description,
+  }) {
+    final data = {
+      'name': name,
+      if (description != null) 'description': description,
+    };
+
+    return _client.put(ApiRoutes.groupById(id), data: data).map((response) {
+      return GroupModel.fromJson(response.data);
+    });
+  }
+
+  @override
+  TaskEither<AppFailure, void> deleteGroup(String id) {
+    return _client.delete(ApiRoutes.groupById(id)).map((_) {});
+  }
+
+  @override
   TaskEither<AppFailure, PaginatedResponse<TransactionModel>>
   getGroupTransactions({
     required String groupId,
