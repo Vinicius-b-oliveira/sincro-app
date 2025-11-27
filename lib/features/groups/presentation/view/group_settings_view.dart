@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:sincro/features/groups/presentation/viewmodels/group_settings/group_settings_state.dart';
 import 'package:sincro/features/groups/presentation/viewmodels/group_settings/group_settings_viewmodel.dart';
 
@@ -33,6 +34,15 @@ class GroupSettingsView extends HookConsumerWidget {
             ),
           );
         },
+        exportSuccess: (filePath) async {
+          await SharePlus.instance.share(
+            ShareParams(
+              files: [XFile(filePath)],
+              subject: 'Exportação do grupo',
+              text: 'Dados exportados do grupo',
+            ),
+          );
+        },
         error: (message) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -62,6 +72,7 @@ class GroupSettingsView extends HookConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (msg) => Center(child: Text('Erro: $msg')),
         success: (_) => const SizedBox.shrink(),
+        exportSuccess: (_) => const SizedBox.shrink(),
         loaded: (group) => SingleChildScrollView(
           child: Padding(
             padding: const EdgeInsets.all(16.0),

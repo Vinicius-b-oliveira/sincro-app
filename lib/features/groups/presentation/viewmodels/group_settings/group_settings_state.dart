@@ -11,5 +11,7 @@ sealed class GroupSettingsState with _$GroupSettingsState {
       GroupSettingsLoaded;
   const factory GroupSettingsState.success(String message) =
       GroupSettingsSuccess;
+  const factory GroupSettingsState.exportSuccess(String filePath) =
+      GroupSettingsExportSuccess;
   const factory GroupSettingsState.error(String message) = GroupSettingsError;
 }

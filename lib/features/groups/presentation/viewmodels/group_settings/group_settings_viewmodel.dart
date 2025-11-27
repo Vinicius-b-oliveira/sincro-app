@@ -1,9 +1,6 @@
-import 'dart:io';
-
 import 'package:fpdart/fpdart.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sincro/core/errors/app_failure.dart';
 import 'package:sincro/features/groups/groups_providers.dart';
@@ -64,38 +61,20 @@ class GroupSettingsViewModel extends _$GroupSettingsViewModel {
     if (currentState is! GroupSettingsLoaded) return;
 
     final currentGroup = currentState.group;
-
     state = const GroupSettingsState.loading();
 
     final preparePathTask = TaskEither<AppFailure, String>.tryCatch(
       () async {
-        if (Platform.isAndroid) {
-          final status = await Permission.storage.request();
-          if (!status.isGranted) {
-            if (await Permission.manageExternalStorage.isGranted == false) {
-              await Permission.manageExternalStorage.request();
-            }
-            if (await Permission.storage.isDenied) {
-              throw Exception('Permissão de armazenamento negada.');
-            }
-          }
-        }
-
-        Directory? directory;
-        if (Platform.isAndroid) {
-          directory = await getExternalStorageDirectory();
-          directory ??= await getApplicationDocumentsDirectory();
-        } else {
-          directory = await getApplicationDocumentsDirectory();
-        }
+        final directory = await getApplicationCacheDirectory();
 
         final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
         final fileName = 'export_grupo_${groupId}_$timestamp.csv';
 
         return '${directory.path}/$fileName';
       },
-      (error, stack) =>
-          GeneralFailure(message: 'Erro ao preparar arquivo: $error'),
+      (error, stack) => GeneralFailure(
+        message: 'Erro ao preparar arquivo: ${error.toString()}',
+      ),
     );
 
     final exportTask = preparePathTask.flatMap((savePath) {
@@ -117,7 +96,7 @@ class GroupSettingsViewModel extends _$GroupSettingsViewModel {
       },
       (savePath) {
         state = GroupSettingsState.loaded(currentGroup);
-        state = GroupSettingsState.success('Arquivo salvo em: $savePath');
+        state = GroupSettingsState.exportSuccess(savePath);
         Future.delayed(const Duration(milliseconds: 100), () {
           state = GroupSettingsState.loaded(currentGroup);
         });
