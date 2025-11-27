@@ -36,6 +36,9 @@ class GroupDetailViewModel extends _$GroupDetailViewModel {
       return;
     }
 
+    bool isMounted = true;
+    ref.onDispose(() => isMounted = false);
+
     final groupsRepo = ref.read(groupsRepositoryProvider);
     final homeRepo = ref.read(homeRepositoryProvider);
     final analyticsRepo = ref.read(analyticsRepositoryProvider);
@@ -50,6 +53,7 @@ class GroupDetailViewModel extends _$GroupDetailViewModel {
           page: 1,
         )
         .run();
+
     final chartFuture = analyticsRepo
         .getSummary(
           period: '1y',
@@ -64,6 +68,8 @@ class GroupDetailViewModel extends _$GroupDetailViewModel {
       recentsFuture,
       chartFuture,
     ]);
+
+    if (!isMounted) return;
 
     results[0].fold(
       (failure) => state = state.copyWith(
